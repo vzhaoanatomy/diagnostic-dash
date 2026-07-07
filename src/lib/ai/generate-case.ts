@@ -25,7 +25,7 @@ export async function generateCaseDraft(input: GenerateInput): Promise<CaseFormD
 
   if (!provider) {
     throw new Error(
-      "No AI provider configured. Add GEMINI_API_KEY (free — get one at aistudio.google.com/apikey) or OPENAI_API_KEY in Vercel → Settings → Environment Variables, then redeploy."
+      "No AI provider configured. Add GEMINI_API_KEY in Vercel (get a free key at aistudio.google.com/apikey), then redeploy."
     );
   }
 

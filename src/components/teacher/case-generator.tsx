@@ -57,7 +57,7 @@ export function CaseGenerator({
         </CardTitle>
         <CardDescription>
           Enter a topic and optional tests to order. AI fills in the case — review and edit before
-          saving. Uses Google Gemini (free API key) or OpenAI.
+          saving. Powered by Google Gemini — review and edit before saving.
         </CardDescription>
       </CardHeader>
       <CardContent>
