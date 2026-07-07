@@ -77,9 +77,20 @@ Edit `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+OPENAI_API_KEY=sk-your-openai-api-key
 ```
 
-### 4. Install and Run
+### 4. Enable AI case generation (optional)
+
+To use **Generate with AI** on the New Case page:
+
+1. Create an API key at [platform.openai.com](https://platform.openai.com/api-keys)
+2. Add `OPENAI_API_KEY` to `.env.local` (local) and Vercel → **Settings → Environment Variables** (production)
+3. Redeploy on Vercel after adding the key
+
+Teachers enter a topic (e.g. "pediatric asthma exacerbation") and optional tests to include. AI generates a full draft — case presentation, menu items with costs and clue results, accepted answers, and debrief. Always review before saving.
+
+### 5. Install and Run
 
 ```bash
 npm install
@@ -88,18 +99,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-### 5. Create a Teacher Account
+### 6. Create a Teacher Account
 
 1. Go to `/login`
 2. Sign up with your email
 3. Confirm your email if email confirmation is enabled in Supabase Auth settings
    - For development, disable email confirmation: Supabase Dashboard → Authentication → Providers → Email → turn off "Confirm email"
 
-### 6. Seed a Sample Case
+### 7. Seed a Sample Case
 
 After creating your teacher account, run `supabase/seed.sql` in the Supabase SQL Editor. This creates "The Tired Teenager" — a hypothyroidism case with 10 menu items.
 
-### 7. Deploy to Vercel
+### 8. Deploy to Vercel
 
 1. Push to GitHub
 2. Import the repo in [vercel.com](https://vercel.com)

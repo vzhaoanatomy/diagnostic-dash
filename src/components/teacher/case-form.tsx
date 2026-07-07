@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { createCase, updateCase, deleteCase } from "@/lib/actions/game";
 import type { Case, CaseMenuItem } from "@/lib/types/database";
+import type { CaseFormDraft } from "@/lib/types/case-draft";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +32,9 @@ const emptyMenuItem = (): MenuItemDraft => ({
   sort_order: 0,
 });
 
-function caseToForm(caseData?: Case, menuItems?: CaseMenuItem[]) {
+function caseToForm(caseData?: Case, menuItems?: CaseMenuItem[], initialDraft?: CaseFormDraft) {
+  if (initialDraft) return initialDraft;
+
   return {
     title: caseData?.title ?? "",
     category: caseData?.category ?? "General",
@@ -58,13 +61,15 @@ function caseToForm(caseData?: Case, menuItems?: CaseMenuItem[]) {
 export function CaseForm({
   caseData,
   menuItems,
+  initialDraft,
 }: {
   caseData?: Case;
   menuItems?: CaseMenuItem[];
+  initialDraft?: CaseFormDraft;
 }) {
   const router = useRouter();
   const isEditing = !!caseData;
-  const initial = caseToForm(caseData, menuItems);
+  const initial = caseToForm(caseData, menuItems, initialDraft);
 
   const [title, setTitle] = useState(initial.title);
   const [category, setCategory] = useState(initial.category);
