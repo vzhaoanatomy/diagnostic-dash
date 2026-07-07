@@ -77,18 +77,25 @@ Edit `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-OPENAI_API_KEY=sk-your-openai-api-key
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 ### 4. Enable AI case generation (optional)
 
 To use **Generate with AI** on the New Case page:
 
-1. Create an API key at [platform.openai.com](https://platform.openai.com/api-keys)
-2. Add `OPENAI_API_KEY` to `.env.local` (local) and Vercel → **Settings → Environment Variables** (production)
-3. Redeploy on Vercel after adding the key
+**Recommended — Google Gemini (free, no credit card):**
 
-Teachers enter a topic (e.g. "pediatric asthma exacerbation") and optional tests to include. AI generates a full draft — case presentation, menu items with costs and clue results, accepted answers, and debrief. Always review before saving.
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+2. Sign in with any Google account → **Create API key**
+3. Add `GEMINI_API_KEY` in Vercel → **Settings → Environment Variables**
+4. Redeploy
+
+**Alternative — OpenAI** (requires paid billing; school ChatGPT accounts don't include API access):
+
+1. Add `OPENAI_API_KEY` at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+
+Teachers enter a topic and optional tests. AI generates a full draft to review before saving.
 
 ### 5. Install and Run
 

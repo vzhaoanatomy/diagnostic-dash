@@ -29,12 +29,18 @@ export function CaseGenerator({
     setError(null);
 
     try {
-      const draft = await generateCaseWithAI({
+      const result = await generateCaseWithAI({
         topic,
         suggestedTests: suggestedTests || undefined,
         difficulty,
       });
-      onGenerated(draft);
+
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+
+      onGenerated(result.draft);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed");
     } finally {
@@ -51,7 +57,7 @@ export function CaseGenerator({
         </CardTitle>
         <CardDescription>
           Enter a topic and optional tests to order. AI fills in the case — review and edit before
-          saving.
+          saving. Uses Google Gemini (free API key) or OpenAI.
         </CardDescription>
       </CardHeader>
       <CardContent>
