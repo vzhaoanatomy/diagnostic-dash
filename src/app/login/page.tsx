@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MedicalShell, MedicalCard, MedicalIconBadge } from "@/components/layout/medical-shell";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -49,12 +50,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white px-4">
-      <Card className="w-full max-w-md">
+    <MedicalShell theme="auth" className="flex items-center justify-center px-4 py-12">
+      <MedicalCard accent="blue" className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Stethoscope className="h-6 w-6 text-primary" />
-          </div>
+          <MedicalIconBadge variant="blue" className="mx-auto mb-2">
+            <Stethoscope className="h-6 w-6" />
+          </MedicalIconBadge>
           <CardTitle>{isSignUp ? "Create Teacher Account" : "Teacher Login"}</CardTitle>
           <CardDescription>
             {isSignUp
@@ -116,7 +117,7 @@ export default function LoginPage() {
             </Link>
           </div>
         </CardContent>
-      </Card>
-    </div>
+      </MedicalCard>
+    </MedicalShell>
   );
 }

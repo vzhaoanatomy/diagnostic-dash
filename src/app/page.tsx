@@ -1,19 +1,26 @@
 import Link from "next/link";
-import { Stethoscope, GraduationCap, Users } from "lucide-react";
+import { Stethoscope, GraduationCap, Users, Activity, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  MedicalShell,
+  MedicalCard,
+  MedicalIconBadge,
+} from "@/components/layout/medical-shell";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <header className="border-b bg-white/80 backdrop-blur-sm">
+    <MedicalShell theme="landing">
+      <header className="medical-nav">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <Stethoscope className="h-7 w-7 text-primary" />
-            <span className="text-xl font-bold text-foreground">Diagnostic Dash</span>
+            <MedicalIconBadge variant="blue">
+              <Stethoscope className="h-6 w-6" />
+            </MedicalIconBadge>
+            <span className="medical-nav-brand text-xl">Diagnostic Dash</span>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="border-primary/20 bg-white/70">
               <Link href="/join">Join Game</Link>
             </Button>
             <Button asChild>
@@ -25,7 +32,11 @@ export default function HomePage() {
 
       <main className="mx-auto max-w-5xl px-6 py-16">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <span className="medical-badge mb-4 inline-flex items-center gap-1.5">
+            <HeartPulse className="h-3.5 w-3.5" />
+            Clinical reasoning game
+          </span>
+          <h1 className="medical-hero-title text-4xl font-bold tracking-tight sm:text-5xl">
             Diagnose. Collaborate. Learn.
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
@@ -35,10 +46,12 @@ export default function HomePage() {
         </div>
 
         <div className="mt-16 grid gap-6 sm:grid-cols-3">
-          <Card>
+          <MedicalCard accent="blue">
             <CardHeader>
-              <GraduationCap className="mb-2 h-8 w-8 text-primary" />
-              <CardTitle className="text-lg">For Teachers</CardTitle>
+              <MedicalIconBadge variant="blue">
+                <GraduationCap className="h-6 w-6" />
+              </MedicalIconBadge>
+              <CardTitle className="mt-4 text-lg">For Teachers</CardTitle>
               <CardDescription>
                 Create cases, launch live sessions, and review team diagnoses in real time.
               </CardDescription>
@@ -48,42 +61,52 @@ export default function HomePage() {
                 <Link href="/login">Go to Dashboard</Link>
               </Button>
             </CardContent>
-          </Card>
+          </MedicalCard>
 
-          <Card>
+          <MedicalCard accent="teal">
             <CardHeader>
-              <Users className="mb-2 h-8 w-8 text-primary" />
-              <CardTitle className="text-lg">For Students</CardTitle>
+              <MedicalIconBadge variant="teal">
+                <Users className="h-6 w-6" />
+              </MedicalIconBadge>
+              <CardTitle className="mt-4 text-lg">For Students</CardTitle>
               <CardDescription>
                 Join with a session code and team name. One device per team — no account needed.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" asChild className="w-full">
+              <Button variant="outline" asChild className="w-full border-medical-teal/30 bg-white/60 hover:bg-medical-mint/10">
                 <Link href="/join">Join a Game</Link>
               </Button>
             </CardContent>
-          </Card>
+          </MedicalCard>
 
-          <Card>
+          <MedicalCard accent="rose">
             <CardHeader>
-              <Stethoscope className="mb-2 h-8 w-8 text-primary" />
-              <CardTitle className="text-lg">How It Works</CardTitle>
+              <MedicalIconBadge variant="rose">
+                <Activity className="h-6 w-6" />
+              </MedicalIconBadge>
+              <CardTitle className="mt-4 text-lg">How It Works</CardTitle>
               <CardDescription>
                 Purchase diagnostic clues, build your case file, and submit your diagnosis
                 with supporting evidence.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ol className="space-y-1 text-sm text-muted-foreground">
-                <li>1. Read the case presentation</li>
-                <li>2. Buy tests within budget</li>
-                <li>3. Submit diagnosis + evidence</li>
+              <ol className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex gap-2">
+                  <span className="font-semibold text-primary">1.</span> Read the case presentation
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-semibold text-primary">2.</span> Buy tests within budget
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-semibold text-primary">3.</span> Submit diagnosis + evidence
+                </li>
               </ol>
             </CardContent>
-          </Card>
+          </MedicalCard>
         </div>
       </main>
-    </div>
+    </MedicalShell>
   );
 }

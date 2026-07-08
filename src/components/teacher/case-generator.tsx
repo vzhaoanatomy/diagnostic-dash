@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MedicalCard } from "@/components/layout/medical-shell";
 
 export function CaseGenerator({
   onGenerated,
@@ -49,7 +50,7 @@ export function CaseGenerator({
   }
 
   return (
-    <Card className="border-primary/20 bg-primary/5">
+    <MedicalCard accent="blue" className="border-primary/20 bg-primary/5">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Sparkles className="h-5 w-5 text-primary" />
@@ -115,6 +116,6 @@ export function CaseGenerator({
           </Button>
         </form>
       </CardContent>
-    </Card>
+    </MedicalCard>
   );
 }

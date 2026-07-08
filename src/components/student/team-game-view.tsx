@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { MedicalShell, MedicalIconBadge } from "@/components/layout/medical-shell";
 import {
   Stethoscope,
   ShoppingCart,
@@ -153,17 +154,21 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50/50 to-white">
-      <header className="border-b bg-white/80 backdrop-blur-sm">
+    <MedicalShell theme="student">
+      <header className="medical-nav medical-nav-student">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <Stethoscope className="h-5 w-5 text-emerald-700" />
-            <span className="font-bold">{data.team.team_name}</span>
+            <MedicalIconBadge variant="teal" className="h-9 w-9 rounded-lg">
+              <Stethoscope className="h-5 w-5" />
+            </MedicalIconBadge>
+            <span className="medical-nav-brand-student font-bold">{data.team.team_name}</span>
           </div>
           <div className="flex items-center gap-4">
-            <Badge variant="outline">{sessionStatusLabel(data.session.status)}</Badge>
-            <div className="flex items-center gap-1 text-sm font-medium">
-              <DollarSign className="h-4 w-4 text-emerald-600" />
+            <Badge variant="outline" className="border-medical-teal/30 bg-white/70">
+              {sessionStatusLabel(data.session.status)}
+            </Badge>
+            <div className="flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-medical-teal shadow-sm">
+              <DollarSign className="h-4 w-4" />
               {formatCurrency(data.team.budget_remaining)}
             </div>
           </div>
@@ -223,7 +228,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                   <p className="text-sm font-medium text-muted-foreground">Presentation</p>
                   <p className="whitespace-pre-wrap leading-relaxed">{data.caseData.case_intro}</p>
                 </div>
-                <div className="rounded-lg bg-emerald-50 p-3 text-sm">
+                <div className="rounded-lg border border-medical-teal/20 bg-medical-mint/15 p-3 text-sm">
                   Budget: {formatCurrency(data.caseData.starting_budget)} · Spent:{" "}
                   {formatCurrency(data.caseData.starting_budget - data.team.budget_remaining)}
                 </div>
@@ -268,7 +273,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                   const canAfford = data.team.budget_remaining >= item.cost;
 
                   return (
-                    <Card key={item.id} className={purchased ? "border-emerald-300 bg-emerald-50/50" : ""}>
+                    <Card key={item.id} className={purchased ? "border-medical-teal/40 bg-medical-mint/10" : ""}>
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <CardTitle className="text-base">{item.name}</CardTitle>
@@ -280,7 +285,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                       </CardHeader>
                       <CardContent>
                         {purchased ? (
-                          <Badge className="bg-emerald-100 text-emerald-800">
+                          <Badge className="bg-medical-mint/30 text-medical-teal">
                             <CheckCircle className="mr-1 h-3 w-3" /> Purchased
                           </Badge>
                         ) : (
@@ -288,7 +293,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                             size="sm"
                             disabled={!canAfford || !!loading || hasSubmitted}
                             onClick={() => handlePurchase(item.id)}
-                            className="bg-emerald-600 hover:bg-emerald-700"
+                            className="medical-btn-student"
                           >
                             {loading === item.id ? "Ordering..." : canAfford ? "Order" : "Insufficient funds"}
                           </Button>
@@ -342,7 +347,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    <CheckCircle className="h-5 w-5 text-medical-teal" />
                     Diagnosis Submitted
                   </CardTitle>
                 </CardHeader>
@@ -429,7 +434,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                     </div>
                     <Button
                       type="submit"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700"
+                      className="medical-btn-student w-full"
                       disabled={!isActive || isPaused || isEnded || loading === "submit"}
                     >
                       {loading === "submit" ? "Submitting..." : "Submit Diagnosis"}
@@ -454,6 +459,6 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </MedicalShell>
   );
 }

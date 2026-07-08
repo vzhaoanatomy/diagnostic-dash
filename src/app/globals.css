@@ -19,6 +19,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-medical-teal: var(--medical-teal);
+  --color-medical-sky: var(--medical-sky);
+  --color-medical-mint: var(--medical-mint);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -27,24 +30,27 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.985 0.002 240);
-  --foreground: oklch(0.18 0.02 250);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 250);
+  --background: oklch(0.985 0.008 220);
+  --foreground: oklch(0.2 0.03 240);
+  --card: oklch(1 0.002 220);
+  --card-foreground: oklch(0.2 0.03 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 250);
-  --primary: oklch(0.45 0.14 250);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.95 0.01 240);
-  --secondary-foreground: oklch(0.25 0.02 250);
-  --muted: oklch(0.95 0.01 240);
-  --muted-foreground: oklch(0.5 0.02 250);
-  --accent: oklch(0.93 0.02 240);
-  --accent-foreground: oklch(0.25 0.02 250);
+  --popover-foreground: oklch(0.2 0.03 240);
+  --primary: oklch(0.48 0.14 230);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.02 220);
+  --secondary-foreground: oklch(0.28 0.04 240);
+  --muted: oklch(0.95 0.015 220);
+  --muted-foreground: oklch(0.48 0.03 240);
+  --accent: oklch(0.93 0.03 200);
+  --accent-foreground: oklch(0.28 0.04 240);
   --destructive: oklch(0.55 0.2 25);
-  --border: oklch(0.9 0.01 240);
-  --input: oklch(0.9 0.01 240);
-  --ring: oklch(0.45 0.14 250);
+  --border: oklch(0.9 0.02 220);
+  --input: oklch(0.92 0.02 220);
+  --ring: oklch(0.48 0.14 230);
+  --medical-teal: oklch(0.55 0.12 185);
+  --medical-sky: oklch(0.62 0.12 230);
+  --medical-mint: oklch(0.72 0.1 165);
 }
 
 @layer base {
@@ -54,4 +60,190 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+}
+
+.medical-shell {
+  @apply relative min-h-screen overflow-x-hidden;
+}
+
+.medical-shell-content {
+  @apply relative z-10;
+}
+
+.medical-theme-landing {
+  background: linear-gradient(
+    165deg,
+    oklch(0.97 0.03 220) 0%,
+    oklch(0.99 0.01 200) 45%,
+    oklch(0.98 0.02 185) 100%
+  );
+}
+
+.medical-theme-teacher {
+  background: linear-gradient(
+    180deg,
+    oklch(0.96 0.025 230) 0%,
+    oklch(0.985 0.012 220) 40%,
+    oklch(0.99 0.008 210) 100%
+  );
+}
+
+.medical-theme-student {
+  background: linear-gradient(
+    165deg,
+    oklch(0.97 0.035 175) 0%,
+    oklch(0.99 0.015 190) 50%,
+    oklch(0.98 0.02 210) 100%
+  );
+}
+
+.medical-theme-auth {
+  background: linear-gradient(
+    160deg,
+    oklch(0.96 0.03 230) 0%,
+    oklch(0.99 0.01 220) 60%,
+    oklch(0.98 0.015 200) 100%
+  );
+}
+
+.medical-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(oklch(0.48 0.14 230 / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.48 0.14 230 / 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 20%, transparent 75%);
+  pointer-events: none;
+}
+
+.medical-glow {
+  position: absolute;
+  top: -120px;
+  right: -80px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, oklch(0.62 0.12 230 / 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.medical-theme-student .medical-glow {
+  background: radial-gradient(circle, oklch(0.65 0.14 175 / 0.14) 0%, transparent 70%);
+  top: -100px;
+  left: -60px;
+  right: auto;
+}
+
+.medical-ecg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  opacity: 0.07;
+  background-repeat: repeat-x;
+  background-size: 600px 140px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 140' fill='none'%3E%3Cpath d='M0 70 H80 L95 70 L110 45 L125 95 L140 70 L600 70' stroke='%230ea5e9' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.medical-theme-student .medical-ecg {
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 140' fill='none'%3E%3Cpath d='M0 70 H80 L95 70 L110 45 L125 95 L140 70 L600 70' stroke='%2310b981' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.medical-card {
+  box-shadow:
+    0 1px 2px oklch(0.48 0.14 230 / 0.06),
+    0 8px 24px oklch(0.48 0.14 230 / 0.04);
+}
+
+.medical-card-accent-blue {
+  border-top: 3px solid oklch(0.55 0.14 230);
+}
+
+.medical-card-accent-teal {
+  border-top: 3px solid oklch(0.58 0.13 175);
+}
+
+.medical-card-accent-rose {
+  border-top: 3px solid oklch(0.6 0.16 15);
+}
+
+.medical-icon-badge-blue {
+  background: linear-gradient(135deg, oklch(0.94 0.04 230), oklch(0.88 0.08 230));
+  color: oklch(0.45 0.14 230);
+}
+
+.medical-icon-badge-teal {
+  background: linear-gradient(135deg, oklch(0.94 0.04 175), oklch(0.88 0.08 175));
+  color: oklch(0.45 0.12 175);
+}
+
+.medical-icon-badge-rose {
+  background: linear-gradient(135deg, oklch(0.95 0.04 15), oklch(0.9 0.08 15));
+  color: oklch(0.5 0.16 15);
+}
+
+.medical-badge {
+  @apply rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide;
+  background: oklch(0.48 0.14 230 / 0.1);
+  color: oklch(0.42 0.14 230);
+  border: 1px solid oklch(0.48 0.14 230 / 0.15);
+}
+
+.medical-badge-teal {
+  background: oklch(0.55 0.12 175 / 0.12);
+  color: oklch(0.4 0.12 175);
+  border-color: oklch(0.55 0.12 175 / 0.2);
+}
+
+.medical-nav {
+  @apply border-b backdrop-blur-md;
+  background: oklch(1 0 0 / 0.82);
+  border-color: oklch(0.48 0.14 230 / 0.12);
+  box-shadow: 0 1px 0 oklch(0.48 0.14 230 / 0.05);
+}
+
+.medical-nav-student {
+  border-color: oklch(0.55 0.12 175 / 0.15);
+  box-shadow: 0 1px 0 oklch(0.55 0.12 175 / 0.06);
+}
+
+.medical-nav-brand {
+  @apply font-bold;
+  background: linear-gradient(135deg, oklch(0.42 0.14 230), oklch(0.5 0.12 200));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.medical-nav-brand-student {
+  background: linear-gradient(135deg, oklch(0.4 0.12 175), oklch(0.48 0.14 200));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.medical-stat-card {
+  @apply rounded-xl border bg-card/90 p-5 backdrop-blur-sm;
+  border-color: oklch(0.48 0.14 230 / 0.1);
+  box-shadow: 0 4px 16px oklch(0.48 0.14 230 / 0.05);
+}
+
+.medical-hero-title {
+  background: linear-gradient(135deg, oklch(0.25 0.05 240), oklch(0.42 0.14 230));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.medical-btn-student {
+  background: linear-gradient(135deg, oklch(0.52 0.13 175), oklch(0.48 0.14 190));
+  @apply text-white shadow-md hover:opacity-95;
+}
+
+.medical-btn-student:disabled {
+  @apply opacity-50;
 }

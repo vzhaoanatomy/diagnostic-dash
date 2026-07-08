@@ -8,7 +8,9 @@ import { joinGame } from "@/lib/actions/game";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MedicalShell, MedicalCard, MedicalIconBadge } from "@/components/layout/medical-shell";
+import { cn } from "@/lib/utils";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -37,12 +39,12 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-emerald-50 to-white px-4">
-      <Card className="w-full max-w-md">
+    <MedicalShell theme="student" className="flex items-center justify-center px-4 py-12">
+      <MedicalCard accent="teal" className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-            <Users className="h-6 w-6 text-emerald-700" />
-          </div>
+          <MedicalIconBadge variant="teal" className="mx-auto mb-2">
+            <Users className="h-6 w-6" />
+          </MedicalIconBadge>
           <CardTitle>Join a Game</CardTitle>
           <CardDescription>
             Enter the session code from your teacher and choose a team name
@@ -76,7 +78,7 @@ export default function JoinPage() {
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
+            <Button type="submit" className={cn("medical-btn-student w-full")} disabled={loading}>
               {loading ? "Joining..." : "Join Game"}
             </Button>
           </form>
@@ -92,7 +94,7 @@ export default function JoinPage() {
             </Link>
           </div>
         </CardContent>
-      </Card>
-    </div>
+      </MedicalCard>
+    </MedicalShell>
   );
 }

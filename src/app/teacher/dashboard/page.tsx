@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { sessionStatusLabel, sessionStatusColor } from "@/lib/utils";
-import { Play, BookOpen } from "lucide-react";
+import { Play, BookOpen, Activity } from "lucide-react";
+import { MedicalPageHeader, MedicalCard } from "@/components/layout/medical-shell";
 
 export default async function TeacherDashboard() {
   const supabase = await createClient();
@@ -29,49 +30,43 @@ export default async function TeacherDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="mt-1 text-muted-foreground">
-          Manage your cases and live game sessions
-        </p>
-      </div>
+      <MedicalPageHeader
+        badge="Teacher workspace"
+        title="Dashboard"
+        description="Manage your cases and live game sessions"
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Cases</CardDescription>
-            <CardTitle className="text-3xl">{cases?.length ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Active Sessions</CardDescription>
-            <CardTitle className="text-3xl">{activeSessions.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Quick Actions</CardDescription>
-          </CardHeader>
-          <CardContent className="flex gap-2">
-            <Button size="sm" asChild>
-              <Link href="/teacher/cases/new">
-                <BookOpen className="h-4 w-4" />
-                New Case
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="medical-stat-card">
+          <p className="text-sm text-muted-foreground">Total Cases</p>
+          <p className="mt-1 text-3xl font-bold text-primary">{cases?.length ?? 0}</p>
+        </div>
+        <div className="medical-stat-card">
+          <p className="text-sm text-muted-foreground">Active Sessions</p>
+          <p className="mt-1 text-3xl font-bold text-primary">{activeSessions.length}</p>
+        </div>
+        <div className="medical-stat-card flex flex-col justify-between">
+          <p className="text-sm text-muted-foreground">Quick Actions</p>
+          <Button size="sm" className="mt-3 w-fit" asChild>
+            <Link href="/teacher/cases/new">
+              <BookOpen className="h-4 w-4" />
+              New Case
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {activeSessions.length > 0 && (
         <section>
-          <h2 className="mb-4 text-xl font-semibold">Live Sessions</h2>
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+            <Activity className="h-5 w-5 text-primary" />
+            Live Sessions
+          </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {activeSessions.map((session) => {
               const caseInfo = session.case as { title: string; category: string };
               return (
-                <Card key={session.id}>
+                <MedicalCard key={session.id} accent="blue">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
@@ -97,7 +92,7 @@ export default async function TeacherDashboard() {
                       </Link>
                     </Button>
                   </CardContent>
-                </Card>
+                </MedicalCard>
               );
             })}
           </div>
@@ -114,7 +109,7 @@ export default async function TeacherDashboard() {
         {cases && cases.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {cases.slice(0, 6).map((c) => (
-              <Card key={c.id}>
+              <MedicalCard key={c.id} accent="blue">
                 <CardHeader>
                   <CardTitle className="text-base">{c.title}</CardTitle>
                   <CardDescription>{c.category}</CardDescription>
@@ -124,18 +119,18 @@ export default async function TeacherDashboard() {
                     <Link href={`/teacher/cases/${c.id}/edit`}>Edit</Link>
                   </Button>
                 </CardContent>
-              </Card>
+              </MedicalCard>
             ))}
           </div>
         ) : (
-          <Card>
+          <MedicalCard accent="blue">
             <CardContent className="py-8 text-center">
               <p className="text-muted-foreground">No cases yet.</p>
               <Button className="mt-4" asChild>
                 <Link href="/teacher/cases/new">Create Your First Case</Link>
               </Button>
             </CardContent>
-          </Card>
+          </MedicalCard>
         )}
       </section>
     </div>

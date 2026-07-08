@@ -6,6 +6,7 @@ import { Stethoscope, LayoutDashboard, BookOpen, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { MedicalIconBadge } from "@/components/layout/medical-shell";
 
 const navItems = [
   { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -24,12 +25,14 @@ export function TeacherNav({ email }: { email: string }) {
   }
 
   return (
-    <header className="border-b bg-white">
+    <header className="medical-nav">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
         <div className="flex items-center gap-6">
           <Link href="/teacher/dashboard" className="flex items-center gap-2">
-            <Stethoscope className="h-6 w-6 text-primary" />
-            <span className="font-bold">Diagnostic Dash</span>
+            <MedicalIconBadge variant="blue" className="h-9 w-9 rounded-lg">
+              <Stethoscope className="h-5 w-5" />
+            </MedicalIconBadge>
+            <span className="medical-nav-brand">Diagnostic Dash</span>
           </Link>
           <nav className="flex gap-1">
             {navItems.map(({ href, label, icon: Icon }) => (
