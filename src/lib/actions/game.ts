@@ -47,6 +47,7 @@ export async function createCase(data: CaseFormData) {
       description: item.description,
       clue_content: item.clue_content,
       clue_image_url: item.clue_image_url,
+      item_type: item.item_type ?? "test",
       sort_order: item.sort_order ?? index,
     }));
 
@@ -92,6 +93,7 @@ export async function updateCase(caseId: string, data: CaseFormData) {
       description: item.description,
       clue_content: item.clue_content,
       clue_image_url: item.clue_image_url,
+      item_type: item.item_type ?? "test",
       sort_order: item.sort_order ?? index,
     }));
 

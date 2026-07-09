@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical, ImageIcon } from "lucide-react";
 import { createCase, updateCase, deleteCase } from "@/lib/actions/game";
 import type { Case, CaseMenuItem } from "@/lib/types/database";
 import type { CaseFormDraft } from "@/lib/types/case-draft";
+import {
+  MENU_ITEM_TYPES,
+  type MenuItemType,
+} from "@/lib/menu-item-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,17 +24,22 @@ interface MenuItemDraft {
   description: string;
   clue_content: string;
   clue_image_url: string | null;
+  item_type: MenuItemType;
   sort_order: number;
 }
 
-const emptyMenuItem = (): MenuItemDraft => ({
-  name: "",
-  cost: 50,
-  description: "",
-  clue_content: "",
-  clue_image_url: null,
-  sort_order: 0,
-});
+function emptyMenuItem(type: MenuItemType = "test"): MenuItemDraft {
+  const preset = MENU_ITEM_TYPES[type];
+  return {
+    name: type === "test" ? "" : preset.label,
+    cost: preset.defaultCost,
+    description: type === "test" ? "" : preset.description,
+    clue_content: "",
+    clue_image_url: null,
+    item_type: type,
+    sort_order: 0,
+  };
+}
 
 function caseToForm(caseData?: Case, menuItems?: CaseMenuItem[], initialDraft?: CaseFormDraft) {
   if (initialDraft) return initialDraft;
@@ -53,6 +62,7 @@ function caseToForm(caseData?: Case, menuItems?: CaseMenuItem[], initialDraft?: 
       description: m.description,
       clue_content: m.clue_content,
       clue_image_url: m.clue_image_url,
+      item_type: m.item_type ?? "test",
       sort_order: m.sort_order,
     })) ?? [emptyMenuItem()],
   };
@@ -90,8 +100,11 @@ export function CaseForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function addMenuItem() {
-    setMenuItemsState([...menuItemsState, { ...emptyMenuItem(), sort_order: menuItemsState.length }]);
+  function addMenuItem(type: MenuItemType = "test") {
+    setMenuItemsState([
+      ...menuItemsState,
+      { ...emptyMenuItem(type), sort_order: menuItemsState.length },
+    ]);
   }
 
   function removeMenuItem(index: number) {
@@ -100,7 +113,36 @@ export function CaseForm({
 
   function updateMenuItem(index: number, field: keyof MenuItemDraft, value: string | number) {
     const updated = [...menuItemsState];
-    updated[index] = { ...updated[index], [field]: value };
+    const current = updated[index];
+    const oldType = current.item_type;
+
+    if (field === "clue_image_url") {
+      updated[index] = { ...current, clue_image_url: String(value).trim() || null };
+    } else if (field === "item_type") {
+      const type = value as MenuItemType;
+      const preset = MENU_ITEM_TYPES[type];
+      const oldPreset = MENU_ITEM_TYPES[oldType];
+      updated[index] = {
+        ...current,
+        item_type: type,
+        name:
+          !current.name.trim() || current.name === oldPreset.label
+            ? type === "test"
+              ? ""
+              : preset.label
+            : current.name,
+        description:
+          !current.description.trim() || current.description === oldPreset.description
+            ? type === "test"
+              ? ""
+              : preset.description
+            : current.description,
+        cost: preset.defaultCost,
+      };
+    } else {
+      updated[index] = { ...current, [field]: value };
+    }
+
     setMenuItemsState(updated);
   }
 
@@ -193,8 +235,17 @@ export function CaseForm({
                 <Input id="complaint" value={chiefComplaint} onChange={(e) => setChiefComplaint(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="intro">Case Introduction (shown to students)</Label>
-                <Textarea id="intro" value={caseIntro} onChange={(e) => setCaseIntro(e.target.value)} rows={6} />
+                <Label htmlFor="intro">Brief Presentation (shown free to students)</Label>
+                <Textarea
+                  id="intro"
+                  value={caseIntro}
+                  onChange={(e) => setCaseIntro(e.target.value)}
+                  rows={4}
+                  placeholder="One short paragraph: who the patient is, setting, and chief complaint. Students order Symptom History, Medical Background, and Lifestyle Background separately."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Keep this brief. Put detailed history in the Patient Interview menu items.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="notes">Teacher Notes (private)</Label>
@@ -205,12 +256,36 @@ export function CaseForm({
         </TabsContent>
 
         <TabsContent value="menu" className="mt-4 space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => addMenuItem("symptom_history")}>
+              + Symptom History
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addMenuItem("medical_background")}>
+              + Medical Background
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addMenuItem("lifestyle_background")}>
+              + Lifestyle Background
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addMenuItem("test")}>
+              + Test / Exam
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addMenuItem("image")}>
+              <ImageIcon className="mr-1 h-3 w-3" />
+              + Image
+            </Button>
+          </div>
+
           {menuItemsState.map((item, index) => (
             <Card key={index}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="flex items-center gap-2">
                   <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-base">Item {index + 1}</CardTitle>
+                  <CardTitle className="text-base">
+                    {item.name || `Item ${index + 1}`}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      ({MENU_ITEM_TYPES[item.item_type].group})
+                    </span>
+                  </CardTitle>
                 </div>
                 {menuItemsState.length > 1 && (
                   <Button type="button" variant="ghost" size="sm" onClick={() => removeMenuItem(index)}>
@@ -219,7 +294,21 @@ export function CaseForm({
                 )}
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <div className="space-y-1">
+                    <Label>Type</Label>
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                      value={item.item_type}
+                      onChange={(e) => updateMenuItem(index, "item_type", e.target.value)}
+                    >
+                      {(Object.keys(MENU_ITEM_TYPES) as MenuItemType[]).map((type) => (
+                        <option key={type} value={type}>
+                          {MENU_ITEM_TYPES[type].label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="space-y-1">
                     <Label>Name</Label>
                     <Input value={item.name} onChange={(e) => updateMenuItem(index, "name", e.target.value)} placeholder="TSH" />
@@ -234,13 +323,29 @@ export function CaseForm({
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label>Clue Content (revealed after purchase)</Label>
+                  <Label>
+                    {item.item_type === "image" ? "Image Caption / Findings (revealed after purchase)" : "Clue Content (revealed after purchase)"}
+                  </Label>
                   <Textarea value={item.clue_content} onChange={(e) => updateMenuItem(index, "clue_content", e.target.value)} rows={4} />
                 </div>
+                {(item.item_type === "image" || item.clue_image_url) && (
+                  <div className="space-y-1">
+                    <Label>Image URL (optional — paste a public image link)</Label>
+                    <Input
+                      value={item.clue_image_url ?? ""}
+                      onChange={(e) => updateMenuItem(index, "clue_image_url", e.target.value || "")}
+                      placeholder="https://..."
+                    />
+                    {item.clue_image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.clue_image_url} alt="Preview" className="mt-2 max-h-32 rounded border" />
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
-          <Button type="button" variant="outline" onClick={addMenuItem}>
+          <Button type="button" variant="outline" onClick={() => addMenuItem()}>
             <Plus className="h-4 w-4" />
             Add Menu Item
           </Button>

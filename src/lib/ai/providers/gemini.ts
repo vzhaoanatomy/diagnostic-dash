@@ -2,13 +2,32 @@ import { CASE_GENERATION_SYSTEM_PROMPT, buildCaseUserPrompt } from "@/lib/ai/pro
 import { normalizeDraft, parseJsonContent } from "@/lib/ai/normalize-draft";
 import type { CaseFormDraft } from "@/lib/types/case-draft";
 
-/** Current Gemini models (1.5-flash is retired on v1beta). */
+/** Try lite/smaller models first — often more available under load. */
 const FALLBACK_MODELS = [
-  "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
   "gemini-flash-latest",
+  "gemini-2.5-flash",
   "gemini-2.0-flash",
 ];
+
+function isRetryableError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("quota") ||
+    lower.includes("rate") ||
+    lower.includes("limit: 0") ||
+    lower.includes("not found") ||
+    lower.includes("not supported") ||
+    lower.includes("high demand") ||
+    lower.includes("overloaded") ||
+    lower.includes("unavailable") ||
+    lower.includes("try again")
+  );
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function callGeminiModel(
   apiKey: string,
@@ -50,13 +69,7 @@ async function callGeminiModel(
       // use default
     }
 
-    const retry =
-      message.includes("quota") ||
-      message.includes("rate") ||
-      message.includes("limit: 0") ||
-      message.includes("not found") ||
-      message.includes("not supported");
-
+    const retry = isRetryableError(message);
     return { ok: false, message, retry };
   }
 
@@ -87,19 +100,30 @@ export async function generateWithGemini(input: {
     : FALLBACK_MODELS;
 
   let lastError = "Gemini generation failed.";
+  let triedHighDemand = false;
 
-  for (const model of modelsToTry) {
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const model = modelsToTry[i];
+    if (i > 0) await sleep(800);
+
     const result = await callGeminiModel(apiKey, model, userPrompt);
     if (result.ok) {
       return normalizeDraft(parseJsonContent(result.content));
     }
     lastError = result.message;
+    if (lastError.toLowerCase().includes("high demand")) triedHighDemand = true;
     if (!result.retry) break;
   }
 
   if (lastError.includes("quota") || lastError.includes("limit: 0")) {
     throw new Error(
       "Gemini free tier limit reached. Wait a minute and try again, or remove GEMINI_MODEL from Vercel so the app auto-picks a supported model."
+    );
+  }
+
+  if (triedHighDemand) {
+    throw new Error(
+      "Gemini is busy right now (high demand). Wait 30–60 seconds and click Generate again — this is temporary."
     );
   }
 

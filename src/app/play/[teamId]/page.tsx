@@ -56,7 +56,12 @@ export default async function PlayPage({
         team,
         session,
         caseData: caseData as Case,
-        menuItems: (menuItems ?? []) as CaseMenuItem[],
+        menuItems: ((menuItems ?? []) as CaseMenuItem[]).map((item) => ({
+          ...item,
+          item_type: item.item_type ?? "test",
+          clue_content: "",
+          clue_image_url: null,
+        })),
         purchases: (purchases ?? []) as (TeamPurchase & { menu_item: CaseMenuItem })[],
       }}
     />

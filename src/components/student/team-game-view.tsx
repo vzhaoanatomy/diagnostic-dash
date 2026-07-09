@@ -28,7 +28,13 @@ import {
   DollarSign,
   AlertCircle,
   CheckCircle,
+  MessageSquare,
+  ImageIcon,
 } from "lucide-react";
+import {
+  menuItemGroupLabel,
+  type MenuItemType,
+} from "@/lib/menu-item-types";
 
 interface PlayData {
   team: Team;
@@ -55,6 +61,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
   const [notesSaved, setNotesSaved] = useState(false);
 
   const purchasedIds = new Set(data.purchases.map((p) => p.menu_item_id));
+  const menuGroups = groupMenuItems(data.menuItems);
   const isPaused = data.session.status === "paused";
   const isEnded = data.session.status === "ended";
   const isActive = data.session.status === "active" || data.session.status === "waiting";
@@ -198,7 +205,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
             <TabsTrigger value="case">Case</TabsTrigger>
             <TabsTrigger value="menu">
               <ShoppingCart className="mr-1 h-4 w-4" />
-              Order Tests
+              Order Clues
             </TabsTrigger>
             <TabsTrigger value="file">
               <FileText className="mr-1 h-4 w-4" />
@@ -227,6 +234,12 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Presentation</p>
                   <p className="whitespace-pre-wrap leading-relaxed">{data.caseData.case_intro}</p>
+                </div>
+                <div className="rounded-lg border border-amber-200/80 bg-amber-50/80 p-3 text-sm text-amber-900">
+                  <MessageSquare className="mr-1 inline h-4 w-4" />
+                  Need more details? Order <strong>Symptom History</strong>,{" "}
+                  <strong>Medical Background</strong>, and <strong>Lifestyle Background</strong> from
+                  the Order Clues tab.
                 </div>
                 <div className="rounded-lg border border-medical-teal/20 bg-medical-mint/15 p-3 text-sm">
                   Budget: {formatCurrency(data.caseData.starting_budget)} · Spent:{" "}
@@ -267,41 +280,52 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {data.menuItems.map((item) => {
-                  const purchased = purchasedIds.has(item.id);
-                  const canAfford = data.team.budget_remaining >= item.cost;
+              <div className="space-y-6">
+                {menuGroups.map((group) => (
+                  <div key={group.label}>
+                    <h3 className="mb-3 text-sm font-semibold text-muted-foreground">{group.label}</h3>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {group.items.map((item) => {
+                        const purchased = purchasedIds.has(item.id);
+                        const canAfford = data.team.budget_remaining >= item.cost;
+                        const isImage = item.item_type === "image";
 
-                  return (
-                    <Card key={item.id} className={purchased ? "border-medical-teal/40 bg-medical-mint/10" : ""}>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <CardTitle className="text-base">{item.name}</CardTitle>
-                          <Badge variant={purchased ? "default" : "outline"}>
-                            {formatCurrency(item.cost)}
-                          </Badge>
-                        </div>
-                        <CardDescription>{item.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {purchased ? (
-                          <Badge className="bg-medical-mint/30 text-medical-teal">
-                            <CheckCircle className="mr-1 h-3 w-3" /> Purchased
-                          </Badge>
-                        ) : (
-                          <Button
-                            size="sm"
-                            disabled={!canAfford || !!loading || hasSubmitted}
-                            onClick={() => handlePurchase(item.id)}
-                            className="medical-btn-student"
-                          >
-                            {loading === item.id ? "Ordering..." : canAfford ? "Order" : "Insufficient funds"}
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        return (
+                          <Card key={item.id} className={purchased ? "border-medical-teal/40 bg-medical-mint/10" : ""}>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-start justify-between">
+                                <CardTitle className="flex items-center gap-1.5 text-base">
+                                  {isImage && <ImageIcon className="h-4 w-4 text-muted-foreground" />}
+                                  {item.name}
+                                </CardTitle>
+                                <Badge variant={purchased ? "default" : "outline"}>
+                                  {formatCurrency(item.cost)}
+                                </Badge>
+                              </div>
+                              <CardDescription>{item.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              {purchased ? (
+                                <Badge className="bg-medical-mint/30 text-medical-teal">
+                                  <CheckCircle className="mr-1 h-3 w-3" /> Purchased
+                                </Badge>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  disabled={!canAfford || !!loading || hasSubmitted}
+                                  onClick={() => handlePurchase(item.id)}
+                                  className="medical-btn-student"
+                                >
+                                  {loading === item.id ? "Ordering..." : canAfford ? "Order" : "Insufficient funds"}
+                                </Button>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </TabsContent>
@@ -310,7 +334,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
             {data.purchases.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  No clues yet. Order tests from the menu to build your case file.
+                  No clues yet. Order patient history or tests from Order Clues to build your case file.
                 </CardContent>
               </Card>
             ) : (
@@ -325,16 +349,18 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {purchase.menu_item.clue_content}
-                    </div>
                     {purchase.menu_item.clue_image_url && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={purchase.menu_item.clue_image_url}
                         alt={purchase.menu_item.name}
-                        className="mt-3 max-h-64 rounded-lg"
+                        className="mb-3 max-h-72 rounded-lg border"
                       />
+                    )}
+                    {purchase.menu_item.clue_content && (
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {purchase.menu_item.clue_content}
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -461,4 +487,26 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
       </main>
     </MedicalShell>
   );
+}
+
+function groupMenuItems(items: CaseMenuItem[]) {
+  const groups = new Map<string, CaseMenuItem[]>();
+
+  for (const item of items) {
+    const type = (item.item_type ?? "test") as MenuItemType;
+    const label = menuItemGroupLabel(type);
+    const list = groups.get(label) ?? [];
+    list.push(item);
+    groups.set(label, list);
+  }
+
+  const order = ["Patient Interview", "Diagnostic Tests"];
+  return order
+    .filter((label) => groups.has(label))
+    .map((label) => ({ label, items: groups.get(label)! }))
+    .concat(
+      [...groups.entries()]
+        .filter(([label]) => !order.includes(label))
+        .map(([label, groupItems]) => ({ label, items: groupItems }))
+    );
 }

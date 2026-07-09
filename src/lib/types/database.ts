@@ -1,3 +1,5 @@
+import type { MenuItemType } from "@/lib/menu-item-types";
+
 export type SessionStatus = "waiting" | "active" | "paused" | "ended";
 export type DiagnosisStatus = "pending" | "correct" | "incorrect";
 
@@ -35,6 +37,7 @@ export interface CaseMenuItem {
   description: string;
   clue_content: string;
   clue_image_url: string | null;
+  item_type: MenuItemType;
   sort_order: number;
   created_at: string;
 }

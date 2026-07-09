@@ -1,9 +1,12 @@
+import type { MenuItemType } from "@/lib/menu-item-types";
+
 export interface MenuItemDraft {
   name: string;
   cost: number;
   description: string;
   clue_content: string;
   clue_image_url: string | null;
+  item_type: MenuItemType;
   sort_order: number;
 }
 
