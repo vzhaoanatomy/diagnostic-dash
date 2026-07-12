@@ -11,6 +11,7 @@ import {
 } from "@/lib/game-rules";
 import { isInterviewType, type MenuItemType } from "@/lib/menu-item-types";
 import { generateJoinCode, checkDiagnosis } from "@/lib/utils";
+import { isMissingColumnError, SCHEMA_MIGRATION_HINT } from "@/lib/supabase/schema-fallback";
 import type { CaseFormData } from "@/lib/types/database";
 
 async function getTeacherId() {
@@ -59,7 +60,23 @@ export async function createCase(data: CaseFormData) {
     }));
 
     const { error: itemsError } = await supabase.from("case_menu_items").insert(items);
-    if (itemsError) throw new Error(itemsError.message);
+    if (itemsError) {
+      if (isMissingColumnError(itemsError.message, "item_type")) {
+        const legacyItems = data.menu_items.map((item, index) => ({
+          case_id: newCase.id,
+          name: item.name,
+          cost: item.cost,
+          description: item.description,
+          clue_content: item.clue_content,
+          clue_image_url: item.clue_image_url,
+          sort_order: item.sort_order ?? index,
+        }));
+        const { error: legacyError } = await supabase.from("case_menu_items").insert(legacyItems);
+        if (legacyError) throw new Error(legacyError.message);
+      } else {
+        throw new Error(itemsError.message);
+      }
+    }
   }
 
   revalidatePath("/teacher/cases");
@@ -153,19 +170,34 @@ export async function launchSession(caseId: string, strictMode = false) {
     attempts++;
   }
 
-  const { data: session, error } = await supabase
+  const baseInsert = {
+    case_id: caseId,
+    teacher_id: userId,
+    join_code: joinCode,
+    status: "waiting" as const,
+  };
+
+  let { data: session, error } = await supabase
     .from("game_sessions")
-    .insert({
-      case_id: caseId,
-      teacher_id: userId,
-      join_code: joinCode,
-      status: "waiting",
-      strict_mode: strictMode,
-    })
+    .insert({ ...baseInsert, strict_mode: strictMode })
     .select()
     .single();
 
+  if (error && isMissingColumnError(error.message, "strict_mode")) {
+    if (strictMode) {
+      throw new Error(
+        `Strict mode requires a database update. ${SCHEMA_MIGRATION_HINT}`
+      );
+    }
+    ({ data: session, error } = await supabase
+      .from("game_sessions")
+      .insert(baseInsert)
+      .select()
+      .single());
+  }
+
   if (error) throw new Error(error.message);
+  if (!session) throw new Error("Failed to create session");
 
   revalidatePath("/teacher/dashboard");
   redirect(`/teacher/sessions/${session.id}`);
@@ -181,7 +213,12 @@ export async function updateSessionStrictMode(sessionId: string, strictMode: boo
     .eq("teacher_id", userId)
     .in("status", ["waiting", "paused"]);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isMissingColumnError(error.message, "strict_mode")) {
+      throw new Error(`Strict mode requires a database update. ${SCHEMA_MIGRATION_HINT}`);
+    }
+    throw new Error(error.message);
+  }
   revalidatePath(`/teacher/sessions/${sessionId}`);
 }
 
@@ -441,7 +478,24 @@ export async function submitDiagnosis(
     updates.first_submitted_at = now;
   }
 
-  const { error } = await supabase.from("teams").update(updates).eq("id", teamId);
+  let { error } = await supabase.from("teams").update(updates).eq("id", teamId);
+
+  if (
+    error &&
+    (isMissingColumnError(error.message, "submission_count") ||
+      isMissingColumnError(error.message, "first_diagnosis"))
+  ) {
+    ({ error } = await supabase
+      .from("teams")
+      .update({
+        diagnosis: trimmedDiagnosis,
+        evidence: evidence.filter((e) => e.trim()),
+        alternate_diagnosis: alternateDiagnosis.trim() || null,
+        diagnosis_status: diagnosisStatus,
+        submitted_at: team.submitted_at ?? now,
+      })
+      .eq("id", teamId));
+  }
 
   if (error) throw new Error(error.message);
 

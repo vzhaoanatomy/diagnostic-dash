@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LiveSessionView } from "@/components/teacher/live-session-view";
 import type { Case, CaseMenuItem, GameSession, Team, TeamPurchase } from "@/lib/types/database";
@@ -14,11 +14,13 @@ export default async function SessionPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) redirect("/login");
+
   const { data: session } = await supabase
     .from("game_sessions")
     .select("*")
     .eq("id", sessionId)
-    .eq("teacher_id", user!.id)
+    .eq("teacher_id", user.id)
     .single();
 
   if (!session) notFound();
