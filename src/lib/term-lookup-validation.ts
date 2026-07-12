@@ -14,6 +14,9 @@ const BLOCKED_PATTERNS = [
 
 const FILLER_PREFIX = /^(what is|what's|define|meaning of|explain)\s+/i;
 
+/** Minimum words in a query before we treat a case-text match as copy-paste cheating. */
+const MIN_WORDS_FOR_CASE_PASTE_BLOCK = 4;
+
 export function normalizeLookupQuery(raw: string): string {
   return raw.trim().replace(FILLER_PREFIX, "").trim();
 }
@@ -57,29 +60,26 @@ export function validateLookupQuery(
 
   const normalizedTerm = normalizeAnswer(term);
   const visibleNormalized = normalizeAnswer(options.visibleCaseText);
+  const wordCount = countWords(term);
 
-  if (normalizedTerm.length >= 4 && visibleNormalized.includes(normalizedTerm)) {
-    return {
-      ok: false,
-      error: "That text appears in your case materials. Term lookup is for outside vocabulary only.",
-    };
-  }
-
-  if (trimmed.length >= 12 && visibleNormalized.includes(normalizeAnswer(trimmed))) {
-    return {
-      ok: false,
-      error: "That text appears in your case materials. Term lookup is for outside vocabulary only.",
-    };
+  // Block copying multi-word phrases from the case file — not single vocabulary words
+  // students encounter in clues (e.g. "sciatic" from "sciatic nerve").
+  if (wordCount >= MIN_WORDS_FOR_CASE_PASTE_BLOCK) {
+    const normalizedQuery = normalizeAnswer(trimmed);
+    if (visibleNormalized.includes(normalizedQuery) || visibleNormalized.includes(normalizedTerm)) {
+      return {
+        ok: false,
+        error: "Look up a single medical term, not a sentence copied from your case file.",
+      };
+    }
   }
 
   for (const blocked of options.blockedTerms) {
     const normalizedBlocked = normalizeAnswer(blocked);
     if (!normalizedBlocked) continue;
-    if (
-      normalizedTerm === normalizedBlocked ||
-      normalizedTerm.includes(normalizedBlocked) ||
-      normalizedBlocked.includes(normalizedTerm)
-    ) {
+
+    // Exact match only — don't block "sciatic" because the answer is "sciatica"
+    if (normalizedTerm === normalizedBlocked) {
       return {
         ok: false,
         error: "That term is too close to a possible diagnosis. Try a general vocabulary word instead.",

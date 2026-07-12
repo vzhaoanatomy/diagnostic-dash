@@ -4,7 +4,7 @@ export function getStudentInstructions(strictMode: boolean): { title: string; bo
     "**Free information:** Age, sex, chief complaint, and a brief presentation.",
     "**How to play:** (1) Work together on one device per team. (2) Go to Order Clues to buy patient history and tests — each purchase costs money and appears in your Case File. (3) You must purchase at least 3 clues before submitting. (4) Use Team Notes to track your reasoning. (5) Submit your best diagnosis with 2–3 pieces of evidence from clues you bought.",
     "**Submitting:** This is about getting it right, not guessing repeatedly. You get one official submission. If it's marked incorrect, you may revise and resubmit once. Use that second chance wisely — buy more clues if you need them.",
-    "**Medical terms:** Use Term Lookup (free, no budget cost) for short vocabulary like \"bradycardia\" or \"what is TSH?\" Keep it to a few words — it defines terms only; it won't diagnose the patient.",
+    "**Medical terms:** Use Term Lookup (free, no budget cost) for words you don't know — even terms that appear in your clues, like \"sciatic\" or \"TSH.\" Keep it to a few words; it defines vocabulary only and won't give you the diagnosis.",
     "**Winning:** Correct diagnosis matters. So does money remaining. Your teacher reviews results when the session ends.",
   ];
 

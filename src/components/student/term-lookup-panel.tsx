@@ -80,7 +80,8 @@ export function TermLookupPanel({
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  Free vocabulary help — max {MAX_LOOKUP_WORDS} words. Won&apos;t diagnose the case.
+                  Free vocabulary help — max {MAX_LOOKUP_WORDS} words. Use this for terms in your
+                  clues you don&apos;t understand.
                 </p>
                 <form onSubmit={handleLookup} className="space-y-2">
                   <Label htmlFor="term-lookup-input">Medical term</Label>
