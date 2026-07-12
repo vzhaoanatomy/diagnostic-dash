@@ -1,24 +1,18 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchTeamReportByTeamId } from "@/lib/export/fetch-team-report";
 import { PrintReportClient } from "@/components/reports/print-report";
 
-export default async function TeamPrintReportPage({
+export default async function StudentPrintReportPage({
   params,
 }: {
-  params: Promise<{ sessionId: string; teamId: string }>;
+  params: Promise<{ teamId: string }>;
 }) {
-  const { sessionId, teamId } = await params;
+  const { teamId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   const report = await fetchTeamReportByTeamId(supabase, teamId);
-  if (!report || report.sessionId !== sessionId || report.teacherId !== user.id) {
-    notFound();
-  }
+  if (!report) notFound();
 
   return (
     <PrintReportClient

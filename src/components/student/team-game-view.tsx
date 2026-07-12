@@ -47,6 +47,7 @@ import {
   ImageIcon,
   BookOpen,
   ClipboardList,
+  ArrowRight,
 } from "lucide-react";
 import {
   menuItemGroupLabel,
@@ -550,6 +551,14 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                           : "Incorrect"}
                     </Badge>
                   )}
+                  <Button
+                    className="medical-btn-student mt-4 w-full"
+                    onClick={() => setActiveTab("prep")}
+                  >
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Continue to Presentation Prep
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
@@ -638,11 +647,12 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
             )}
           </TabsContent>
 
-          <TabsContent value="prep" className="mt-4">
+          <TabsContent value="prep" className="mt-4" forceMount hidden={activeTab !== "prep"}>
             <PresentationPrepTab
               teamId={teamId}
               team={data.team}
               sessionEnded={isEnded}
+              isActive={activeTab === "prep"}
             />
           </TabsContent>
         </Tabs>

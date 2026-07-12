@@ -5,21 +5,17 @@ import { buildTeamPresentationPptx } from "@/lib/export/presentation-pptx";
 
 export async function GET(
   _request: Request,
-  context: { params: Promise<{ sessionId: string; teamId: string }> }
+  context: { params: Promise<{ teamId: string }> }
 ) {
-  const { sessionId, teamId } = await context.params;
+  const { teamId } = await context.params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const report = await fetchTeamReportByTeamId(supabase, teamId);
-  if (!report || report.sessionId !== sessionId || report.teacherId !== user.id) {
-    return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  if (!report) {
+    return NextResponse.json(
+      { error: "Report not available — submit your diagnosis first." },
+      { status: 404 }
+    );
   }
 
   const buffer = await buildTeamPresentationPptx(report);

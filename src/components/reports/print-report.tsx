@@ -16,10 +16,10 @@ export function PrintReportClient({
   return (
     <div className="print-report">
       <style>{`
-        .print-report { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #111; line-height: 1.5; }
-        .print-report h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-        .print-report h2 { font-size: 1.1rem; margin-top: 1.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.25rem; }
-        .print-report .meta { color: #555; font-size: 0.9rem; margin-bottom: 1.5rem; }
+        .print-report { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #134e4a; line-height: 1.6; }
+        .print-report h1 { font-size: 1.75rem; margin-bottom: 0.25rem; color: #0d9488; }
+        .print-report h2 { font-size: 1.15rem; margin-top: 1.5rem; border-bottom: 2px solid #0d9488; padding-bottom: 0.25rem; color: #134e4a; }
+        .print-report .meta { color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem; }
         .print-report ul { padding-left: 1.25rem; }
         .print-report .block { white-space: pre-wrap; margin: 0.5rem 0; }
         .print-report .no-print { margin-bottom: 1rem; }
@@ -29,7 +29,7 @@ export function PrintReportClient({
       <p className="no-print">
         <button
           type="button"
-          className="rounded border px-3 py-1 text-sm"
+          className="rounded-md border border-teal-600 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-800"
           onClick={() => window.print()}
         >
           Print / Save as PDF
