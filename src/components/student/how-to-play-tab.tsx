@@ -7,12 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function HowToPlayTab({
   strictMode,
+  startingBudget,
   onStartCase,
 }: {
   strictMode: boolean;
+  startingBudget: number;
   onStartCase: () => void;
 }) {
-  const { title, body } = getStudentInstructions(strictMode);
+  const { title, body } = getStudentInstructions(strictMode, startingBudget);
 
   return (
     <Card>

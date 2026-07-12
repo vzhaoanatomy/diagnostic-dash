@@ -29,6 +29,7 @@ export async function generateCaseWithAI(
       topic,
       suggestedTests: input.suggestedTests?.trim(),
       difficulty: input.difficulty,
+      primaryUnit: input.primaryUnit,
       menuItemCount: input.menuItemCount,
     });
 

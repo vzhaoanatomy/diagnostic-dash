@@ -6,6 +6,7 @@ type GenerateInput = {
   topic: string;
   suggestedTests?: string;
   difficulty?: string;
+  primaryUnit?: string;
   menuItemCount?: number;
 };
 

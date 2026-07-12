@@ -8,7 +8,9 @@ import {
   MAX_SUBMISSION_COUNT,
   isDiagnosisLocked,
   canResubmitDiagnosis,
+  validateEvidence,
 } from "@/lib/game-rules";
+import { applySpeedBonusIfEligible } from "@/lib/speed-bonus";
 import { isInterviewType, type MenuItemType } from "@/lib/menu-item-types";
 import { generateJoinCode, checkDiagnosis } from "@/lib/utils";
 import { isMissingColumnError, SCHEMA_MIGRATION_HINT } from "@/lib/supabase/schema-fallback";
@@ -32,6 +34,8 @@ export async function createCase(data: CaseFormData) {
       teacher_id: userId,
       title: data.title,
       category: data.category,
+      difficulty: data.difficulty,
+      primary_unit: data.primary_unit,
       patient_age: data.patient_age,
       patient_sex: data.patient_sex,
       chief_complaint: data.chief_complaint,
@@ -56,6 +60,8 @@ export async function createCase(data: CaseFormData) {
       clue_content: item.clue_content,
       clue_image_url: item.clue_image_url,
       item_type: item.item_type ?? "test",
+      reference_range: item.reference_range ?? "",
+      interpretation: item.interpretation ?? "",
       sort_order: item.sort_order ?? index,
     }));
 
@@ -91,6 +97,8 @@ export async function updateCase(caseId: string, data: CaseFormData) {
     .update({
       title: data.title,
       category: data.category,
+      difficulty: data.difficulty,
+      primary_unit: data.primary_unit,
       patient_age: data.patient_age,
       patient_sex: data.patient_sex,
       chief_complaint: data.chief_complaint,
@@ -118,6 +126,8 @@ export async function updateCase(caseId: string, data: CaseFormData) {
       clue_content: item.clue_content,
       clue_image_url: item.clue_image_url,
       item_type: item.item_type ?? "test",
+      reference_range: item.reference_range ?? "",
+      interpretation: item.interpretation ?? "",
       sort_order: item.sort_order ?? index,
     }));
 
@@ -264,6 +274,11 @@ export async function markDiagnosis(
     .eq("id", teamId);
 
   if (error) throw new Error(error.message);
+
+  if (status === "correct") {
+    await applySpeedBonusIfEligible(supabase, teamId, sessionId);
+  }
+
   revalidatePath(`/teacher/sessions/${sessionId}`);
 }
 
@@ -458,6 +473,11 @@ export async function submitDiagnosis(
     );
   }
 
+  if (!isResubmit) {
+    const evidenceError = validateEvidence(evidence);
+    if (evidenceError) throw new Error(evidenceError);
+  }
+
   const { data: caseData } = await supabase
     .from("cases")
     .select("accepted_diagnoses, alternate_accepted_answers")
@@ -510,6 +530,10 @@ export async function submitDiagnosis(
   }
 
   if (error) throw new Error(error.message);
+
+  if (diagnosisStatus === "correct") {
+    await applySpeedBonusIfEligible(supabase, teamId, team.session_id);
+  }
 
   return {
     submissionCount: newSubmissionCount,

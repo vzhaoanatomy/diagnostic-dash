@@ -6,6 +6,7 @@ export async function generateWithOpenAI(input: {
   topic: string;
   suggestedTests?: string;
   difficulty?: string;
+  primaryUnit?: string;
   menuItemCount?: number;
 }): Promise<CaseFormDraft> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();

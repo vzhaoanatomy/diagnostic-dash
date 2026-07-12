@@ -1,4 +1,6 @@
 import type { MenuItemType } from "@/lib/menu-item-types";
+import type { CaseDifficulty } from "@/lib/difficulty-budget";
+import type { PrimaryUnit } from "@/lib/curriculum-units";
 
 export interface MenuItemDraft {
   name: string;
@@ -7,12 +9,16 @@ export interface MenuItemDraft {
   clue_content: string;
   clue_image_url: string | null;
   item_type: MenuItemType;
+  reference_range: string;
+  interpretation: string;
   sort_order: number;
 }
 
 export interface CaseFormDraft {
   title: string;
   category: string;
+  difficulty: CaseDifficulty;
+  primary_unit: PrimaryUnit;
   patient_age: number;
   patient_sex: string;
   chief_complaint: string;
@@ -28,6 +34,7 @@ export interface CaseFormDraft {
 export interface GenerateCaseRequest {
   topic: string;
   suggestedTests?: string;
-  difficulty?: "introductory" | "intermediate" | "advanced";
+  difficulty?: CaseDifficulty;
+  primaryUnit?: PrimaryUnit;
   menuItemCount?: number;
 }

@@ -1,15 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { GameSession, Team, TeamPurchase, CaseMenuItem, Case } from "@/lib/types/database";
 import { updateSessionStatus, markDiagnosis, autoGradeDiagnosis, updateSessionStrictMode } from "@/lib/actions/game";
 import { formatCurrency, sessionStatusLabel, sessionStatusColor } from "@/lib/utils";
+import { computeFinalBudget, speedBonusLabel } from "@/lib/scoring";
+import { SessionRoundTimer } from "@/components/teacher/session-round-timer";
+import { TeamFinalBudgetEditor } from "@/components/teacher/team-final-budget-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Pause, Play, Square } from "lucide-react";
+import { CheckCircle, XCircle, Pause, Play, Square, Trophy, FileText } from "lucide-react";
 
 interface TeamWithPurchases extends Team {
   purchases: (TeamPurchase & { menu_item: CaseMenuItem })[];
@@ -108,6 +112,12 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
 
   const submittedTeams = data.teams.filter((t) => t.submitted_at);
   const pendingTeams = data.teams.filter((t) => !t.submitted_at);
+  const standings = [...data.teams]
+    .filter((t) => t.submitted_at)
+    .sort((a, b) => computeFinalBudget(b) - computeFinalBudget(a));
+  const speedLeaders = [...data.teams]
+    .filter((t) => t.speed_rank != null)
+    .sort((a, b) => (a.speed_rank ?? 99) - (b.speed_rank ?? 99));
 
   return (
     <div className="space-y-6">
@@ -170,7 +180,89 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
             End Session
           </Button>
         )}
+        {data.session.status === "ended" && (
+          <Button variant="outline" asChild>
+            <Link href={`/teacher/sessions/${data.session.id}/reports`}>
+              <FileText className="h-4 w-4" />
+              Reports & Downloads
+            </Link>
+          </Button>
+        )}
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <SessionRoundTimer
+            sessionId={data.session.id}
+            endsAt={data.session.round_timer_ends_at}
+          />
+        </div>
+        {speedLeaders.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Trophy className="h-4 w-4 text-amber-600" />
+                Speed Bonus
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {speedLeaders.map((team) => (
+                <div key={team.id} className="flex items-center justify-between">
+                  <span>{team.team_name}</span>
+                  <Badge variant="outline">{speedBonusLabel(team.speed_rank)}</Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {standings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Standings</CardTitle>
+            <CardDescription>Final scores — edit amounts as needed</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {standings.map((team, index) => (
+              <div
+                key={team.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+              >
+                <div>
+                  <span className="font-semibold">
+                    #{index + 1} {team.team_name}
+                  </span>
+                  {team.diagnosis_status === "correct" ? (
+                    <Badge className="ml-2 bg-green-100 text-green-800">Correct</Badge>
+                  ) : team.diagnosis_status === "incorrect" ? (
+                    <Badge className="ml-2 bg-red-100 text-red-800">Incorrect</Badge>
+                  ) : null}
+                  {speedBonusLabel(team.speed_rank) && (
+                    <Badge variant="outline" className="ml-2">
+                      {speedBonusLabel(team.speed_rank)}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="text-right text-sm">
+                    <p className="font-bold">{formatCurrency(computeFinalBudget(team))}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Budget {formatCurrency(team.budget_remaining)}
+                      {(team.speed_bonus ?? 0) > 0 && ` + ${team.speed_bonus} speed`}
+                    </p>
+                  </div>
+                  <TeamFinalBudgetEditor
+                    team={team}
+                    sessionId={data.session.id}
+                    onUpdated={refreshData}
+                  />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-4">
         <Card>
@@ -229,8 +321,12 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
                       )}
                     </div>
                     <CardDescription>
-                      Budget: {formatCurrency(team.budget_remaining)} · {team.purchases.length}{" "}
-                      purchases
+                      Budget: {formatCurrency(team.budget_remaining)}
+                      {(team.speed_bonus ?? 0) > 0 && ` + ${team.speed_bonus} speed`}
+                      {" · "}
+                      Final: {formatCurrency(computeFinalBudget(team))}
+                      {" · "}
+                      {team.purchases.length} purchases
                       {(team.submission_count ?? 0) > 0 &&
                         ` · Attempt ${Math.min(team.submission_count ?? 0, 2)}/2`}
                     </CardDescription>

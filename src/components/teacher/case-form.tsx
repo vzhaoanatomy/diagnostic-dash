@@ -10,6 +10,12 @@ import {
   MENU_ITEM_TYPES,
   type MenuItemType,
 } from "@/lib/menu-item-types";
+import {
+  DIFFICULTY_OPTIONS,
+  budgetForDifficulty,
+  type CaseDifficulty,
+} from "@/lib/difficulty-budget";
+import { CURRICULUM_UNITS, type PrimaryUnit } from "@/lib/curriculum-units";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +31,8 @@ interface MenuItemDraft {
   clue_content: string;
   clue_image_url: string | null;
   item_type: MenuItemType;
+  reference_range: string;
+  interpretation: string;
   sort_order: number;
 }
 
@@ -37,6 +45,8 @@ function emptyMenuItem(type: MenuItemType = "test"): MenuItemDraft {
     clue_content: "",
     clue_image_url: null,
     item_type: type,
+    reference_range: "",
+    interpretation: "",
     sort_order: 0,
   };
 }
@@ -47,13 +57,15 @@ function caseToForm(caseData?: Case, menuItems?: CaseMenuItem[], initialDraft?: 
   return {
     title: caseData?.title ?? "",
     category: caseData?.category ?? "General",
+    difficulty: caseData?.difficulty ?? "intermediate",
+    primary_unit: caseData?.primary_unit ?? "mixed",
     patient_age: caseData?.patient_age ?? 30,
     patient_sex: caseData?.patient_sex ?? "Unknown",
     chief_complaint: caseData?.chief_complaint ?? "",
     case_intro: caseData?.case_intro ?? "",
     accepted_diagnoses: caseData?.accepted_diagnoses ?? [],
     alternate_accepted_answers: caseData?.alternate_accepted_answers ?? [],
-    starting_budget: caseData?.starting_budget ?? 1000,
+    starting_budget: caseData?.starting_budget ?? budgetForDifficulty("intermediate"),
     teacher_notes: caseData?.teacher_notes ?? "",
     debrief_content: caseData?.debrief_content ?? "",
     menu_items: menuItems?.map((m) => ({
@@ -63,6 +75,8 @@ function caseToForm(caseData?: Case, menuItems?: CaseMenuItem[], initialDraft?: 
       clue_content: m.clue_content,
       clue_image_url: m.clue_image_url,
       item_type: m.item_type ?? "test",
+      reference_range: m.reference_range ?? "",
+      interpretation: m.interpretation ?? "",
       sort_order: m.sort_order,
     })) ?? [emptyMenuItem()],
   };
@@ -83,6 +97,8 @@ export function CaseForm({
 
   const [title, setTitle] = useState(initial.title);
   const [category, setCategory] = useState(initial.category);
+  const [difficulty, setDifficulty] = useState<CaseDifficulty>(initial.difficulty);
+  const [primaryUnit, setPrimaryUnit] = useState<PrimaryUnit>(initial.primary_unit);
   const [patientAge, setPatientAge] = useState(initial.patient_age);
   const [patientSex, setPatientSex] = useState(initial.patient_sex);
   const [chiefComplaint, setChiefComplaint] = useState(initial.chief_complaint);
@@ -99,6 +115,11 @@ export function CaseForm({
   const [menuItemsState, setMenuItemsState] = useState<MenuItemDraft[]>(initial.menu_items);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleDifficultyChange(value: CaseDifficulty) {
+    setDifficulty(value);
+    setStartingBudget(budgetForDifficulty(value));
+  }
 
   function addMenuItem(type: MenuItemType = "test") {
     setMenuItemsState([
@@ -154,6 +175,8 @@ export function CaseForm({
     const formData = {
       title,
       category,
+      difficulty,
+      primary_unit: primaryUnit,
       patient_age: patientAge,
       patient_sex: patientSex,
       chief_complaint: chiefComplaint,
@@ -214,6 +237,38 @@ export function CaseForm({
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
                   <Input id="category" value={category} onChange={(e) => setCategory(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">Difficulty</Label>
+                  <select
+                    id="difficulty"
+                    value={difficulty}
+                    onChange={(e) => handleDifficultyChange(e.target.value as CaseDifficulty)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                  >
+                    {DIFFICULTY_OPTIONS.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.label} (${d.budget})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="primary-unit">Primary Unit</Label>
+                  <select
+                    id="primary-unit"
+                    value={primaryUnit}
+                    onChange={(e) => setPrimaryUnit(e.target.value as PrimaryUnit)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                  >
+                    {CURRICULUM_UNITS.map((unit) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
@@ -328,6 +383,27 @@ export function CaseForm({
                   </Label>
                   <Textarea value={item.clue_content} onChange={(e) => updateMenuItem(index, "clue_content", e.target.value)} rows={4} />
                 </div>
+                {(item.item_type === "test" || item.item_type === "image") && (
+                  <>
+                    <div className="space-y-1">
+                      <Label>Reference Range (general — shown as lab framework)</Label>
+                      <Input
+                        value={item.reference_range}
+                        onChange={(e) => updateMenuItem(index, "reference_range", e.target.value)}
+                        placeholder="e.g. 0.4–4.0 mIU/L"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>How to Read This (general interpretation — no diagnosis spoilers)</Label>
+                      <Textarea
+                        value={item.interpretation}
+                        onChange={(e) => updateMenuItem(index, "interpretation", e.target.value)}
+                        rows={2}
+                        placeholder="What does this test measure? How do high/low values generally relate to function?"
+                      />
+                    </div>
+                  </>
+                )}
                 {(item.item_type === "image" || item.clue_image_url) && (
                   <div className="space-y-1">
                     <Label>Image URL (optional — paste a public image link)</Label>

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { generateCaseWithAI } from "@/lib/actions/generate-case";
 import type { CaseFormDraft } from "@/lib/types/case-draft";
+import type { PrimaryUnit } from "@/lib/curriculum-units";
+import { CURRICULUM_UNITS } from "@/lib/curriculum-units";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +23,7 @@ export function CaseGenerator({
   const [difficulty, setDifficulty] = useState<"introductory" | "intermediate" | "advanced">(
     "intermediate"
   );
+  const [primaryUnit, setPrimaryUnit] = useState<PrimaryUnit>("mixed");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +37,7 @@ export function CaseGenerator({
         topic,
         suggestedTests: suggestedTests || undefined,
         difficulty,
+        primaryUnit,
       });
 
       if (!result.success) {
@@ -82,6 +86,21 @@ export function CaseGenerator({
               placeholder="e.g. CBC, CMP, CT abdomen, urinalysis, pregnancy test"
               rows={2}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="primary-unit">Primary Unit</Label>
+            <select
+              id="primary-unit"
+              value={primaryUnit}
+              onChange={(e) => setPrimaryUnit(e.target.value as PrimaryUnit)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {CURRICULUM_UNITS.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="difficulty">Difficulty</Label>

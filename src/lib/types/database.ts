@@ -1,4 +1,6 @@
 import type { MenuItemType } from "@/lib/menu-item-types";
+import type { CaseDifficulty } from "@/lib/difficulty-budget";
+import type { PrimaryUnit } from "@/lib/curriculum-units";
 
 export type SessionStatus = "waiting" | "active" | "paused" | "ended";
 export type DiagnosisStatus = "pending" | "correct" | "incorrect";
@@ -15,6 +17,8 @@ export interface Case {
   teacher_id: string;
   title: string;
   category: string;
+  difficulty: CaseDifficulty;
+  primary_unit: PrimaryUnit;
   patient_age: number;
   patient_sex: string;
   chief_complaint: string;
@@ -38,6 +42,8 @@ export interface CaseMenuItem {
   clue_content: string;
   clue_image_url: string | null;
   item_type: MenuItemType;
+  reference_range: string;
+  interpretation: string;
   sort_order: number;
   created_at: string;
 }
@@ -49,6 +55,8 @@ export interface GameSession {
   join_code: string;
   status: SessionStatus;
   strict_mode: boolean;
+  round_timer_ends_at: string | null;
+  round_timer_seconds: number | null;
   started_at: string | null;
   ended_at: string | null;
   created_at: string;
@@ -68,6 +76,14 @@ export interface Team {
   first_diagnosis: string | null;
   first_submitted_at: string | null;
   submitted_at: string | null;
+  pathophys_explanation: string;
+  treatment_plan: string[];
+  key_orders_reflection: string;
+  purchase_journey: string;
+  presentation_notes: string;
+  speed_bonus: number;
+  speed_rank: number | null;
+  teacher_budget_adjustment: number;
   created_at: string;
 }
 
@@ -98,6 +114,8 @@ export interface TeamWithPurchases extends Team {
 export interface CaseFormData {
   title: string;
   category: string;
+  difficulty: CaseDifficulty;
+  primary_unit: PrimaryUnit;
   patient_age: number;
   patient_sex: string;
   chief_complaint: string;
@@ -108,6 +126,14 @@ export interface CaseFormData {
   teacher_notes: string;
   debrief_content: string;
   menu_items: Omit<CaseMenuItem, "id" | "case_id" | "created_at">[];
+}
+
+export interface PresentationPrepData {
+  pathophys_explanation: string;
+  treatment_plan: string[];
+  key_orders_reflection: string;
+  purchase_journey: string;
+  presentation_notes: string;
 }
 
 export interface SubmissionFormData {
@@ -137,6 +163,8 @@ export interface Database {
           teacher_id: string;
           title: string;
           category?: string;
+          difficulty?: CaseDifficulty;
+          primary_unit?: PrimaryUnit;
           patient_age?: number;
           patient_sex?: string;
           chief_complaint?: string;
@@ -163,6 +191,8 @@ export interface Database {
           join_code: string;
           status?: SessionStatus;
           strict_mode?: boolean;
+          round_timer_ends_at?: string | null;
+          round_timer_seconds?: number | null;
           started_at?: string | null;
           ended_at?: string | null;
         },
@@ -183,6 +213,14 @@ export interface Database {
           first_diagnosis?: string | null;
           first_submitted_at?: string | null;
           submitted_at?: string | null;
+          pathophys_explanation?: string;
+          treatment_plan?: string[];
+          key_orders_reflection?: string;
+          purchase_journey?: string;
+          presentation_notes?: string;
+          speed_bonus?: number;
+          speed_rank?: number | null;
+          teacher_budget_adjustment?: number;
         },
         Partial<Omit<Team, "id" | "created_at">>
       >;

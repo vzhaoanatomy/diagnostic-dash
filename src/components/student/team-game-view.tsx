@@ -15,12 +15,17 @@ import {
   canSubmitDiagnosis,
   isDiagnosisLocked,
   MIN_PURCHASES_BEFORE_SUBMIT,
+  MIN_EVIDENCE_PIECES,
   purchasesRemainingForSubmit,
+  validateEvidence,
 } from "@/lib/game-rules";
+import { computeFinalBudget, speedBonusLabel } from "@/lib/scoring";
 import { isInterviewType } from "@/lib/menu-item-types";
 import { formatCurrency, sessionStatusLabel } from "@/lib/utils";
 import { HowToPlayTab } from "@/components/student/how-to-play-tab";
 import { TermLookupPanel } from "@/components/student/term-lookup-panel";
+import { PresentationPrepTab } from "@/components/student/presentation-prep-tab";
+import { LabInterpretationPanel, RoundTimerBanner } from "@/components/student/lab-interpretation-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +46,7 @@ import {
   MessageSquare,
   ImageIcon,
   BookOpen,
+  ClipboardList,
 } from "lucide-react";
 import {
   menuItemGroupLabel,
@@ -88,6 +94,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
   const isEnded = data.session.status === "ended";
   const sessionStarted = data.session.status === "active";
   const canOrder = sessionStarted && !isPaused && !isEnded && !diagnosisLocked;
+  const finalScore = computeFinalBudget(data.team);
   const orderStatusMessage = isEnded
     ? "Session has ended — ordering is closed."
     : isPaused
@@ -187,6 +194,13 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!diagnosis.trim()) return;
+
+    const evidenceError = validateEvidence(evidence);
+    if (evidenceError && !canResubmit) {
+      setError(evidenceError);
+      return;
+    }
+
     setLoading("submit");
     setError(null);
     try {
@@ -216,7 +230,12 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
             </Badge>
             <div className="flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-medical-teal shadow-sm">
               <DollarSign className="h-4 w-4" />
-              {formatCurrency(data.team.budget_remaining)}
+              {formatCurrency(finalScore)}
+              {(data.team.speed_bonus ?? 0) > 0 && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({formatCurrency(data.team.budget_remaining)} + {speedBonusLabel(data.team.speed_rank)})
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -228,6 +247,8 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
           Session is paused by your teacher
         </div>
       )}
+
+      <RoundTimerBanner endsAt={data.session.round_timer_ends_at} />
 
       {isEnded && (
         <div className="bg-gray-100 px-4 py-2 text-center text-sm text-gray-700">
@@ -259,10 +280,20 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
               <Send className="mr-1 h-4 w-4" />
               Submit
             </TabsTrigger>
+            {(data.team.submitted_at || isEnded) && (
+              <TabsTrigger value="prep">
+                <ClipboardList className="mr-1 h-4 w-4" />
+                Presentation Prep
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="instructions" className="mt-4">
-            <HowToPlayTab strictMode={strictMode} onStartCase={handleStartCase} />
+            <HowToPlayTab
+              strictMode={strictMode}
+              startingBudget={data.caseData.starting_budget}
+              onStartCase={handleStartCase}
+            />
           </TabsContent>
 
           <TabsContent value="case" className="mt-4">
@@ -451,6 +482,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                         {purchase.menu_item.clue_content}
                       </div>
                     )}
+                    <LabInterpretationPanel item={purchase.menu_item} />
                   </CardContent>
                 </Card>
               ))
@@ -551,7 +583,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Supporting Evidence (2-3 pieces)</Label>
+                      <Label>Supporting Evidence ({MIN_EVIDENCE_PIECES} required)</Label>
                       {evidence.map((ev, i) => (
                         <Input
                           key={i}
@@ -604,6 +636,14 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="prep" className="mt-4">
+            <PresentationPrepTab
+              teamId={teamId}
+              team={data.team}
+              sessionEnded={isEnded}
+            />
           </TabsContent>
         </Tabs>
       </main>
