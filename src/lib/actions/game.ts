@@ -350,8 +350,14 @@ export async function purchaseItem(teamId: string, menuItemId: string) {
   }
 
   const session = team.session as { strict_mode: boolean; status: string };
-  if (session.status === "paused" || session.status === "ended") {
-    throw new Error("Purchases are not available right now.");
+  if (session.status !== "active") {
+    if (session.status === "paused") {
+      throw new Error("Purchases are paused — waiting for teacher to resume.");
+    }
+    if (session.status === "ended") {
+      throw new Error("Session has ended.");
+    }
+    throw new Error("Your teacher hasn't started the session yet.");
   }
 
   const { data: menuItem } = await supabase
@@ -425,8 +431,14 @@ export async function submitDiagnosis(
   if (!team) throw new Error("Team not found");
 
   const session = team.session as { case_id: string; status: string };
-  if (session.status === "paused" || session.status === "ended") {
-    throw new Error("Submissions are not available right now.");
+  if (session.status !== "active") {
+    if (session.status === "paused") {
+      throw new Error("Submissions are paused — waiting for teacher to resume.");
+    }
+    if (session.status === "ended") {
+      throw new Error("Session has ended.");
+    }
+    throw new Error("Submissions are not available until your teacher starts the session.");
   }
 
   if (isDiagnosisLocked(team)) {

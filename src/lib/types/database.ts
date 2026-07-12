@@ -198,6 +198,18 @@ export interface Database {
         Args: { p_team_id: string; p_menu_item_id: string };
         Returns: TeamPurchase;
       };
+      get_team_menu_items: {
+        Args: { p_team_id: string };
+        Returns: {
+          id: string;
+          case_id: string;
+          name: string;
+          cost: number;
+          description: string;
+          item_type: string;
+          sort_order: number;
+        }[];
+      };
       generate_join_code: {
         Args: Record<string, never>;
         Returns: string;

@@ -86,7 +86,15 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
   const strictMode = data.session.strict_mode ?? false;
   const isPaused = data.session.status === "paused";
   const isEnded = data.session.status === "ended";
-  const isActive = data.session.status === "active" || data.session.status === "waiting";
+  const sessionStarted = data.session.status === "active";
+  const canOrder = sessionStarted && !isPaused && !isEnded && !diagnosisLocked;
+  const orderStatusMessage = isEnded
+    ? "Session has ended — ordering is closed."
+    : isPaused
+      ? "Session is paused — ordering will resume when your teacher continues."
+      : !sessionStarted
+        ? "Your teacher hasn't started the session yet. You can preview clues below."
+        : null;
 
   useEffect(() => {
     const seen = localStorage.getItem(`instructions-seen-${teamId}`);
@@ -313,10 +321,17 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
           </TabsContent>
 
           <TabsContent value="menu" className="mt-4">
-            {!isActive || isPaused ? (
+            {orderStatusMessage && (
+              <div className="mb-4 rounded-lg border border-amber-200/80 bg-amber-50/80 p-3 text-sm text-amber-900">
+                {orderStatusMessage}
+              </div>
+            )}
+
+            {data.menuItems.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  {isPaused ? "Purchases paused — waiting for teacher to resume" : "Waiting for session to start"}
+                  No clues are set up for this case yet. Ask your teacher to add menu items in the
+                  case editor.
                 </CardContent>
               </Card>
             ) : (
@@ -337,9 +352,9 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                           (itemType === "test" || itemType === "image") &&
                           !purchased;
                         const purchaseDisabled =
+                          !canOrder ||
                           !canAfford ||
                           !!loading ||
-                          diagnosisLocked ||
                           lockedByStrict;
 
                         return (
@@ -384,11 +399,13 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                                 >
                                   {loading === item.id
                                     ? "Ordering..."
-                                    : lockedByStrict
-                                      ? "Locked"
-                                      : canAfford
-                                        ? "Order"
-                                        : "Insufficient funds"}
+                                    : !canOrder
+                                      ? "Not open yet"
+                                      : lockedByStrict
+                                        ? "Locked"
+                                        : canAfford
+                                          ? "Order"
+                                          : "Insufficient funds"}
                                 </Button>
                               )}
                             </CardContent>
@@ -530,7 +547,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                         onChange={(e) => setDiagnosis(e.target.value)}
                         placeholder="e.g. Hypothyroidism"
                         required
-                        disabled={!isActive || isPaused || isEnded || !canSubmit}
+                        disabled={!sessionStarted || isPaused || isEnded || !canSubmit}
                       />
                     </div>
                     <div className="space-y-2">
@@ -545,7 +562,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                             setEvidence(updated);
                           }}
                           placeholder={`Evidence ${i + 1}`}
-                          disabled={!isActive || isPaused || isEnded || !canSubmit}
+                          disabled={!sessionStarted || isPaused || isEnded || !canSubmit}
                         />
                       ))}
                     </div>
@@ -556,13 +573,13 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                         value={alternateDiagnosis}
                         onChange={(e) => setAlternateDiagnosis(e.target.value)}
                         placeholder="e.g. Depression"
-                        disabled={!isActive || isPaused || isEnded || !canSubmit}
+                        disabled={!sessionStarted || isPaused || isEnded || !canSubmit}
                       />
                     </div>
                     <Button
                       type="submit"
                       className="medical-btn-student w-full"
-                      disabled={!isActive || isPaused || isEnded || loading === "submit" || !canSubmit}
+                      disabled={!sessionStarted || isPaused || isEnded || loading === "submit" || !canSubmit}
                     >
                       {loading === "submit"
                         ? "Submitting..."
