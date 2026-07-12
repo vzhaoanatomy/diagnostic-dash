@@ -10,7 +10,17 @@ import type {
   TeamPurchase,
 } from "@/lib/types/database";
 import { purchaseItem, updateTeamNotes, submitDiagnosis } from "@/lib/actions/game";
+import {
+  canResubmitDiagnosis,
+  canSubmitDiagnosis,
+  isDiagnosisLocked,
+  MIN_PURCHASES_BEFORE_SUBMIT,
+  purchasesRemainingForSubmit,
+} from "@/lib/game-rules";
+import { isInterviewType } from "@/lib/menu-item-types";
 import { formatCurrency, sessionStatusLabel } from "@/lib/utils";
+import { HowToPlayTab } from "@/components/student/how-to-play-tab";
+import { TermLookupPanel } from "@/components/student/term-lookup-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +40,7 @@ import {
   CheckCircle,
   MessageSquare,
   ImageIcon,
+  BookOpen,
 } from "lucide-react";
 import {
   menuItemGroupLabel,
@@ -59,13 +70,33 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notesSaved, setNotesSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState("instructions");
 
   const purchasedIds = new Set(data.purchases.map((p) => p.menu_item_id));
   const menuGroups = groupMenuItems(data.menuItems);
+  const purchaseCount = data.purchases.length;
+  const submissionCount = data.team.submission_count ?? 0;
+  const diagnosisLocked = isDiagnosisLocked(data.team);
+  const canResubmit = canResubmitDiagnosis(data.team);
+  const canSubmit = canSubmitDiagnosis(data.team, purchaseCount);
+  const showSubmitForm = !diagnosisLocked && (submissionCount === 0 || canResubmit);
+  const hasInterviewPurchase = data.purchases.some((p) =>
+    isInterviewType((p.menu_item.item_type ?? "test") as MenuItemType)
+  );
+  const strictMode = data.session.strict_mode ?? false;
   const isPaused = data.session.status === "paused";
   const isEnded = data.session.status === "ended";
   const isActive = data.session.status === "active" || data.session.status === "waiting";
-  const hasSubmitted = !!data.team.submitted_at;
+
+  useEffect(() => {
+    const seen = localStorage.getItem(`instructions-seen-${teamId}`);
+    setActiveTab(seen ? "case" : "instructions");
+  }, [teamId]);
+
+  function handleStartCase() {
+    localStorage.setItem(`instructions-seen-${teamId}`, "1");
+    setActiveTab("case");
+  }
 
   const refreshData = useCallback(async () => {
     const supabase = createClient();
@@ -170,7 +201,8 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
             </MedicalIconBadge>
             <span className="medical-nav-brand-student font-bold">{data.team.team_name}</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <TermLookupPanel teamId={teamId} disabled={isEnded} />
             <Badge variant="outline" className="border-medical-teal/30 bg-white/70">
               {sessionStatusLabel(data.session.status)}
             </Badge>
@@ -200,8 +232,12 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
           <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
         )}
 
-        <Tabs defaultValue="case">
-          <TabsList className="w-full justify-start">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value="instructions">
+              <BookOpen className="mr-1 h-4 w-4" />
+              How to Play
+            </TabsTrigger>
             <TabsTrigger value="case">Case</TabsTrigger>
             <TabsTrigger value="menu">
               <ShoppingCart className="mr-1 h-4 w-4" />
@@ -216,6 +252,10 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
               Submit
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="instructions" className="mt-4">
+            <HowToPlayTab strictMode={strictMode} onStartCase={handleStartCase} />
+          </TabsContent>
 
           <TabsContent value="case" className="mt-4">
             <Card>
@@ -289,9 +329,30 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                         const purchased = purchasedIds.has(item.id);
                         const canAfford = data.team.budget_remaining >= item.cost;
                         const isImage = item.item_type === "image";
+                        const itemType = (item.item_type ?? "test") as MenuItemType;
+                        const lockedByStrict =
+                          strictMode &&
+                          !hasInterviewPurchase &&
+                          !isInterviewType(itemType) &&
+                          (itemType === "test" || itemType === "image") &&
+                          !purchased;
+                        const purchaseDisabled =
+                          !canAfford ||
+                          !!loading ||
+                          diagnosisLocked ||
+                          lockedByStrict;
 
                         return (
-                          <Card key={item.id} className={purchased ? "border-medical-teal/40 bg-medical-mint/10" : ""}>
+                          <Card
+                            key={item.id}
+                            className={
+                              purchased
+                                ? "border-medical-teal/40 bg-medical-mint/10"
+                                : lockedByStrict
+                                  ? "opacity-60"
+                                  : ""
+                            }
+                          >
                             <CardHeader className="pb-2">
                               <div className="flex items-start justify-between">
                                 <CardTitle className="flex items-center gap-1.5 text-base">
@@ -303,6 +364,11 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                                 </Badge>
                               </div>
                               <CardDescription>{item.description}</CardDescription>
+                              {lockedByStrict && (
+                                <p className="text-xs text-amber-700">
+                                  Order a Patient Interview clue first (strict mode)
+                                </p>
+                              )}
                             </CardHeader>
                             <CardContent>
                               {purchased ? (
@@ -312,11 +378,17 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                               ) : (
                                 <Button
                                   size="sm"
-                                  disabled={!canAfford || !!loading || hasSubmitted}
+                                  disabled={purchaseDisabled}
                                   onClick={() => handlePurchase(item.id)}
                                   className="medical-btn-student"
                                 >
-                                  {loading === item.id ? "Ordering..." : canAfford ? "Order" : "Insufficient funds"}
+                                  {loading === item.id
+                                    ? "Ordering..."
+                                    : lockedByStrict
+                                      ? "Locked"
+                                      : canAfford
+                                        ? "Order"
+                                        : "Insufficient funds"}
                                 </Button>
                               )}
                             </CardContent>
@@ -369,17 +441,33 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
           </TabsContent>
 
           <TabsContent value="submit" className="mt-4">
-            {hasSubmitted ? (
+            {canResubmit && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                Your first diagnosis was incorrect. You have <strong>one revision</strong> left — buy
+                more clues if you need them, then submit your final answer.
+              </div>
+            )}
+
+            {!showSubmitForm && submissionCount > 0 ? (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-medical-teal" />
-                    Diagnosis Submitted
+                    {submissionCount >= 2 ? "Final Diagnosis Submitted" : "Diagnosis Submitted"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {data.team.first_diagnosis &&
+                    data.team.first_diagnosis !== data.team.diagnosis && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">First attempt</p>
+                        <p>{data.team.first_diagnosis}</p>
+                      </div>
+                    )}
                   <div>
-                    <p className="text-sm font-medium">Your Diagnosis</p>
+                    <p className="text-sm font-medium">
+                      {submissionCount >= 2 ? "Final diagnosis" : "Your diagnosis"}
+                    </p>
                     <p className="text-lg">{data.team.diagnosis}</p>
                   </div>
                   {data.team.evidence.length > 0 && (
@@ -406,7 +494,11 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                           : "bg-red-100 text-red-800"
                       }
                     >
-                      {data.team.diagnosis_status === "correct" ? "Correct!" : "Incorrect"}
+                      {data.team.diagnosis_status === "correct"
+                        ? "Correct!"
+                        : submissionCount >= 2
+                          ? "Incorrect — no more attempts"
+                          : "Incorrect"}
                     </Badge>
                   )}
                 </CardContent>
@@ -414,12 +506,21 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
             ) : (
               <Card>
                 <CardHeader>
-                  <CardTitle>Submit Your Diagnosis</CardTitle>
+                  <CardTitle>
+                    {canResubmit ? "Revise Your Diagnosis" : "Submit Your Diagnosis"}
+                  </CardTitle>
                   <CardDescription>
-                    Provide your final diagnosis with supporting evidence
+                    Provide your diagnosis with supporting evidence from clues you purchased.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {submissionCount === 0 && purchaseCount < MIN_PURCHASES_BEFORE_SUBMIT && (
+                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                      Purchase at least {MIN_PURCHASES_BEFORE_SUBMIT} clues before submitting (
+                      {purchaseCount}/{MIN_PURCHASES_BEFORE_SUBMIT} so far —{" "}
+                      {purchasesRemainingForSubmit(purchaseCount)} more needed).
+                    </div>
+                  )}
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="diagnosis">Primary Diagnosis</Label>
@@ -429,7 +530,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                         onChange={(e) => setDiagnosis(e.target.value)}
                         placeholder="e.g. Hypothyroidism"
                         required
-                        disabled={!isActive || isPaused || isEnded}
+                        disabled={!isActive || isPaused || isEnded || !canSubmit}
                       />
                     </div>
                     <div className="space-y-2">
@@ -444,7 +545,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                             setEvidence(updated);
                           }}
                           placeholder={`Evidence ${i + 1}`}
-                          disabled={!isActive || isPaused || isEnded}
+                          disabled={!isActive || isPaused || isEnded || !canSubmit}
                         />
                       ))}
                     </div>
@@ -455,15 +556,19 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                         value={alternateDiagnosis}
                         onChange={(e) => setAlternateDiagnosis(e.target.value)}
                         placeholder="e.g. Depression"
-                        disabled={!isActive || isPaused || isEnded}
+                        disabled={!isActive || isPaused || isEnded || !canSubmit}
                       />
                     </div>
                     <Button
                       type="submit"
                       className="medical-btn-student w-full"
-                      disabled={!isActive || isPaused || isEnded || loading === "submit"}
+                      disabled={!isActive || isPaused || isEnded || loading === "submit" || !canSubmit}
                     >
-                      {loading === "submit" ? "Submitting..." : "Submit Diagnosis"}
+                      {loading === "submit"
+                        ? "Submitting..."
+                        : canResubmit
+                          ? "Submit Final Diagnosis"
+                          : "Submit Diagnosis"}
                     </Button>
                   </form>
                 </CardContent>

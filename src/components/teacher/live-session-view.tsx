@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { GameSession, Team, TeamPurchase, CaseMenuItem, Case } from "@/lib/types/database";
-import { updateSessionStatus, markDiagnosis, autoGradeDiagnosis } from "@/lib/actions/game";
+import { updateSessionStatus, markDiagnosis, autoGradeDiagnosis, updateSessionStrictMode } from "@/lib/actions/game";
 import { formatCurrency, sessionStatusLabel, sessionStatusColor } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,6 +86,16 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
     }
   }
 
+  async function handleStrictModeToggle(checked: boolean) {
+    setLoading("strict");
+    try {
+      await updateSessionStrictMode(data.session.id, checked);
+      setData((prev) => ({ ...prev, session: { ...prev.session, strict_mode: checked } }));
+    } finally {
+      setLoading(null);
+    }
+  }
+
   async function handleAutoGrade(teamId: string) {
     setLoading(teamId);
     try {
@@ -115,6 +125,24 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
             <p className="font-mono text-3xl font-bold tracking-widest">{data.session.join_code}</p>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={data.session.strict_mode ?? false}
+            onChange={(e) => handleStrictModeToggle(e.target.checked)}
+            disabled={
+              !!loading || (data.session.status !== "waiting" && data.session.status !== "paused")
+            }
+            className="rounded border-input"
+          />
+          Strict mode (interview before tests)
+        </label>
+        {(data.session.strict_mode ?? false) && (
+          <Badge variant="outline">Strict mode on</Badge>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -201,7 +229,10 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
                       )}
                     </div>
                     <CardDescription>
-                      Budget: {formatCurrency(team.budget_remaining)} · {team.purchases.length} purchases
+                      Budget: {formatCurrency(team.budget_remaining)} · {team.purchases.length}{" "}
+                      purchases
+                      {(team.submission_count ?? 0) > 0 &&
+                        ` · Attempt ${Math.min(team.submission_count ?? 0, 2)}/2`}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -255,8 +286,16 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {team.first_diagnosis && team.first_diagnosis !== team.diagnosis && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">First attempt</p>
+                      <p>{team.first_diagnosis}</p>
+                    </div>
+                  )}
                   <div>
-                    <p className="text-sm font-medium">Diagnosis</p>
+                    <p className="text-sm font-medium">
+                      {(team.submission_count ?? 0) >= 2 ? "Final diagnosis" : "Diagnosis"}
+                    </p>
                     <p className="text-lg">{team.diagnosis}</p>
                   </div>
                   {team.evidence.length > 0 && (

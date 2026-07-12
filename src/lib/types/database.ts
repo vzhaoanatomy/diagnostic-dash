@@ -48,6 +48,7 @@ export interface GameSession {
   teacher_id: string;
   join_code: string;
   status: SessionStatus;
+  strict_mode: boolean;
   started_at: string | null;
   ended_at: string | null;
   created_at: string;
@@ -63,6 +64,9 @@ export interface Team {
   evidence: string[];
   alternate_diagnosis: string | null;
   diagnosis_status: DiagnosisStatus;
+  submission_count: number;
+  first_diagnosis: string | null;
+  first_submitted_at: string | null;
   submitted_at: string | null;
   created_at: string;
 }
@@ -158,6 +162,7 @@ export interface Database {
           teacher_id: string;
           join_code: string;
           status?: SessionStatus;
+          strict_mode?: boolean;
           started_at?: string | null;
           ended_at?: string | null;
         },
@@ -174,6 +179,9 @@ export interface Database {
           evidence?: string[];
           alternate_diagnosis?: string | null;
           diagnosis_status?: DiagnosisStatus;
+          submission_count?: number;
+          first_diagnosis?: string | null;
+          first_submitted_at?: string | null;
           submitted_at?: string | null;
         },
         Partial<Omit<Team, "id" | "created_at">>
