@@ -8,6 +8,7 @@ import { updateSessionStatus, markDiagnosis, autoGradeDiagnosis, updateSessionSt
 import { formatCurrency, sessionStatusLabel, sessionStatusColor } from "@/lib/utils";
 import { computeFinalBudget, speedBonusLabel } from "@/lib/scoring";
 import { SessionRoundTimer } from "@/components/teacher/session-round-timer";
+import { SessionJoinPanel } from "@/components/teacher/session-join-panel";
 import { TeamFinalBudgetEditor } from "@/components/teacher/team-final-budget-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,6 +137,10 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
           </div>
         </div>
       </div>
+
+      {data.session.status !== "ended" && (
+        <SessionJoinPanel joinCode={data.session.join_code} />
+      )}
 
       <div className="flex flex-wrap items-center gap-4">
         <label className="flex cursor-pointer items-center gap-2 text-sm">
