@@ -41,11 +41,15 @@ export function PresentationPrepTab({
   team,
   sessionEnded,
   isActive,
+  readOnly = false,
+  captainToken = null,
 }: {
   teamId: string;
   team: Team;
   sessionEnded: boolean;
   isActive: boolean;
+  readOnly?: boolean;
+  captainToken?: string | null;
 }) {
   const initialTreatment =
     team.treatment_plan?.length >= 3
@@ -69,8 +73,21 @@ export function PresentationPrepTab({
 
   valuesRef.current = { pathophys, treatment, keyOrders, journey, notes };
 
+  useEffect(() => {
+    const nextTreatment =
+      team.treatment_plan?.length >= 3
+        ? team.treatment_plan
+        : [...(team.treatment_plan ?? []), "", "", ""].slice(0, 3);
+    setPathophys(team.pathophys_explanation ?? "");
+    setTreatment(nextTreatment);
+    setKeyOrders(team.key_orders_reflection ?? "");
+    setJourney(team.purchase_journey ?? "");
+    setNotes(team.presentation_notes ?? "");
+    lastSavedRef.current = snapshotFromTeam(team);
+  }, [team]);
+
   const saveNow = useCallback(async () => {
-    if (!hasSubmitted || savingRef.current) return;
+    if (!hasSubmitted || savingRef.current || readOnly) return;
 
     const { pathophys: p, treatment: t, keyOrders: k, journey: j, notes: n } = valuesRef.current;
     const snapshot = buildSnapshot(p, t, k, j, n);
@@ -81,13 +98,17 @@ export function PresentationPrepTab({
     setError(null);
 
     try {
-      await updateTeamPresentationPrep(teamId, {
-        pathophys_explanation: p,
-        treatment_plan: t,
-        key_orders_reflection: k,
-        purchase_journey: j,
-        presentation_notes: n,
-      });
+      await updateTeamPresentationPrep(
+        teamId,
+        {
+          pathophys_explanation: p,
+          treatment_plan: t,
+          key_orders_reflection: k,
+          purchase_journey: j,
+          presentation_notes: n,
+        },
+        captainToken
+      );
       lastSavedRef.current = snapshot;
       setSaveStatus("saved");
     } catch (err) {
@@ -96,11 +117,11 @@ export function PresentationPrepTab({
     } finally {
       savingRef.current = false;
     }
-  }, [hasSubmitted, teamId]);
+  }, [hasSubmitted, teamId, captainToken, readOnly]);
 
   // Debounced auto-save while typing
   useEffect(() => {
-    if (!hasSubmitted) return;
+    if (!hasSubmitted || readOnly) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -110,26 +131,26 @@ export function PresentationPrepTab({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [pathophys, treatment, keyOrders, journey, notes, hasSubmitted, saveNow]);
+  }, [pathophys, treatment, keyOrders, journey, notes, hasSubmitted, saveNow, readOnly]);
 
   // Save immediately when leaving this tab
   useEffect(() => {
-    if (!isActive && hasSubmitted) {
+    if (!isActive && hasSubmitted && !readOnly) {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
         debounceRef.current = null;
       }
       void saveNow();
     }
-  }, [isActive, hasSubmitted, saveNow]);
+  }, [isActive, hasSubmitted, saveNow, readOnly]);
 
   // Flush on unmount (tab hidden / page leave)
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      void saveNow();
+      if (!readOnly) void saveNow();
     };
-  }, [saveNow]);
+  }, [saveNow, readOnly]);
 
   if (!hasSubmitted) {
     return (
@@ -153,10 +174,11 @@ export function PresentationPrepTab({
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-medical-teal/30 bg-medical-mint/15 p-3 text-sm">
-        Your work auto-saves when you switch tabs.{" "}
-        {sessionEnded
-          ? "Session ended — finish your presentation for next class."
-          : "Use Case File and Order Clues to gather details, then come back here."}
+        {readOnly
+          ? "View only — your captain edits this workbook on the ordering iPad."
+          : sessionEnded
+            ? "Session ended — finish your presentation for next class."
+            : "Your work auto-saves when you switch tabs. Use Case File to gather details."}
       </div>
 
       <Card>
@@ -175,7 +197,9 @@ export function PresentationPrepTab({
               }`}
               aria-live="polite"
             >
-              {saveLabel}
+              {readOnly
+                ? "Read-only"
+                : saveLabel}
             </p>
           </div>
         </CardHeader>
@@ -187,6 +211,8 @@ export function PresentationPrepTab({
               onChange={(e) => setPathophys(e.target.value)}
               rows={4}
               placeholder="Explain the pathophysiology in 2–4 sentences..."
+              readOnly={readOnly}
+              disabled={readOnly}
             />
           </div>
 
@@ -202,6 +228,8 @@ export function PresentationPrepTab({
                   setTreatment(updated);
                 }}
                 placeholder={`Treatment / next step ${i + 1}`}
+                readOnly={readOnly}
+                disabled={readOnly}
               />
             ))}
           </div>
@@ -212,6 +240,8 @@ export function PresentationPrepTab({
               value={keyOrders}
               onChange={(e) => setKeyOrders(e.target.value)}
               rows={3}
+              readOnly={readOnly}
+              disabled={readOnly}
             />
           </div>
 
@@ -220,12 +250,12 @@ export function PresentationPrepTab({
               Purchase journey — what did you order, in what order, and how did your thinking
               change?
             </Label>
-            <Textarea value={journey} onChange={(e) => setJourney(e.target.value)} rows={4} />
+            <Textarea value={journey} onChange={(e) => setJourney(e.target.value)} rows={4} readOnly={readOnly} disabled={readOnly} />
           </div>
 
           <div className="space-y-2">
             <Label>Presentation notes (for presenting to other teams)</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} readOnly={readOnly} disabled={readOnly} />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

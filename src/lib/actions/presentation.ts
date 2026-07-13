@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { PresentationPrepData } from "@/lib/types/database";
+import { assertCaptainToken } from "@/lib/captain-server";
 
 async function getTeacherId() {
   const supabase = await createClient();
@@ -15,9 +16,12 @@ async function getTeacherId() {
 
 export async function updateTeamPresentationPrep(
   teamId: string,
-  data: PresentationPrepData
+  data: PresentationPrepData,
+  captainToken?: string | null
 ) {
   const supabase = await createClient();
+
+  await assertCaptainToken(supabase, teamId, captainToken);
 
   const { data: team } = await supabase
     .from("teams")

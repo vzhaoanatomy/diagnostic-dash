@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Users, Stethoscope } from "lucide-react";
 import { joinGame } from "@/lib/actions/game";
+import { storeCaptainToken } from "@/lib/captain-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,12 +26,18 @@ export function JoinGameForm({ initialCode = "" }: { initialCode?: string }) {
     setError(null);
 
     try {
-      const { teamId } = await joinGame(joinCode.trim(), teamName.trim());
+      const result = await joinGame(joinCode.trim(), teamName.trim());
       if (typeof window !== "undefined") {
-        localStorage.setItem("teamId", teamId);
+        localStorage.setItem("teamId", result.teamId);
         localStorage.setItem("teamName", teamName.trim());
+        if (result.captainToken) {
+          storeCaptainToken(result.teamId, result.captainToken);
+        }
+        if (result.captainPin) {
+          sessionStorage.setItem(`captain-pin-${result.teamId}`, result.captainPin);
+        }
       }
-      router.push(`/play/${teamId}`);
+      router.push(`/play/${result.teamId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to join");
     } finally {
@@ -88,7 +95,7 @@ export function JoinGameForm({ initialCode = "" }: { initialCode?: string }) {
 
           <div className="mt-6 rounded-lg bg-muted p-3 text-center text-sm text-muted-foreground">
             <Stethoscope className="mx-auto mb-1 h-4 w-4" />
-            One device per team. Work together with your teammates!
+            One ordering iPad per team — share the viewer link with teammates after you join.
           </div>
 
           <div className="mt-4 text-center">

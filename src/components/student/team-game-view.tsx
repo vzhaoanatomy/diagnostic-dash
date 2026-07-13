@@ -26,6 +26,9 @@ import { HowToPlayTab } from "@/components/student/how-to-play-tab";
 import { TermLookupPanel } from "@/components/student/term-lookup-panel";
 import { PresentationPrepTab } from "@/components/student/presentation-prep-tab";
 import { LabInterpretationPanel, RoundTimerBanner } from "@/components/student/lab-interpretation-panel";
+import { CaptainPinGate } from "@/components/student/captain-pin-gate";
+import { TeamSharePanel } from "@/components/student/team-share-panel";
+import { getCaptainToken } from "@/lib/captain-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +50,7 @@ import {
   ImageIcon,
   BookOpen,
   ClipboardList,
+  Eye,
   ArrowRight,
 } from "lucide-react";
 import {
@@ -62,7 +66,17 @@ interface PlayData {
   purchases: (TeamPurchase & { menu_item: CaseMenuItem })[];
 }
 
-export function TeamGameView({ teamId, initialData }: { teamId: string; initialData: PlayData }) {
+export function TeamGameView({
+  teamId,
+  initialData,
+  mode = "captain",
+}: {
+  teamId: string;
+  initialData: PlayData;
+  mode?: "captain" | "viewer";
+}) {
+  const readOnly = mode === "viewer";
+  const [captainReady, setCaptainReady] = useState(readOnly);
   const [data, setData] = useState(initialData);
   const [notes, setNotes] = useState(initialData.team.shared_notes);
   const [diagnosis, setDiagnosis] = useState(initialData.team.diagnosis ?? "");
@@ -78,6 +92,9 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
   const [error, setError] = useState<string | null>(null);
   const [notesSaved, setNotesSaved] = useState(false);
   const [activeTab, setActiveTab] = useState("instructions");
+  const [storedCaptainPin, setStoredCaptainPin] = useState<string | null>(
+    initialData.team.captain_pin
+  );
 
   const purchasedIds = new Set(data.purchases.map((p) => p.menu_item_id));
   const menuGroups = groupMenuItems(data.menuItems);
@@ -108,6 +125,24 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
     const seen = localStorage.getItem(`instructions-seen-${teamId}`);
     setActiveTab(seen ? "case" : "instructions");
   }, [teamId]);
+
+  useEffect(() => {
+    if (mode === "captain") {
+      setCaptainReady(!!getCaptainToken(teamId));
+    }
+  }, [mode, teamId]);
+
+  useEffect(() => {
+    setNotes(data.team.shared_notes);
+  }, [data.team.shared_notes]);
+
+  useEffect(() => {
+    const fromSession =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem(`captain-pin-${teamId}`)
+        : null;
+    setStoredCaptainPin(data.team.captain_pin ?? fromSession);
+  }, [data.team.captain_pin, teamId]);
 
   function handleStartCase() {
     localStorage.setItem(`instructions-seen-${teamId}`, "1");
@@ -172,7 +207,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
     setLoading(menuItemId);
     setError(null);
     try {
-      await purchaseItem(teamId, menuItemId);
+      await purchaseItem(teamId, menuItemId, getCaptainToken(teamId));
       await refreshData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Purchase failed");
@@ -184,7 +219,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
   async function handleSaveNotes() {
     setLoading("notes");
     try {
-      await updateTeamNotes(teamId, notes);
+      await updateTeamNotes(teamId, notes, getCaptainToken(teamId));
       setNotesSaved(true);
       setTimeout(() => setNotesSaved(false), 2000);
     } finally {
@@ -205,13 +240,31 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
     setLoading("submit");
     setError(null);
     try {
-      await submitDiagnosis(teamId, diagnosis, evidence, alternateDiagnosis);
+      await submitDiagnosis(
+        teamId,
+        diagnosis,
+        evidence,
+        alternateDiagnosis,
+        getCaptainToken(teamId)
+      );
       await refreshData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submit failed");
     } finally {
       setLoading(null);
     }
+  }
+
+  if (mode === "captain" && !captainReady) {
+    return (
+      <MedicalShell theme="student">
+        <CaptainPinGate
+          teamId={teamId}
+          teamName={data.team.team_name}
+          onUnlocked={() => setCaptainReady(true)}
+        />
+      </MedicalShell>
+    );
   }
 
   return (
@@ -223,6 +276,12 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
               <Stethoscope className="h-5 w-5" />
             </MedicalIconBadge>
             <span className="medical-nav-brand-student font-bold">{data.team.team_name}</span>
+            {readOnly && (
+              <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-800">
+                <Eye className="mr-1 h-3 w-3" />
+                View only
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <TermLookupPanel teamId={teamId} disabled={isEnded} />
@@ -241,6 +300,12 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
           </div>
         </div>
       </header>
+
+      {readOnly && (
+        <div className="bg-blue-50 px-4 py-2 text-center text-sm text-blue-900">
+          Following along with your team — ordering and submissions happen on the captain iPad.
+        </div>
+      )}
 
       {isPaused && (
         <div className="bg-amber-50 px-4 py-2 text-center text-sm text-amber-800">
@@ -262,6 +327,16 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
           <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
         )}
 
+        {!readOnly && (
+          <div className="mb-4">
+            <TeamSharePanel
+              teamId={teamId}
+              teamName={data.team.team_name}
+              captainPin={storedCaptainPin}
+            />
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="instructions">
@@ -269,10 +344,12 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
               How to Play
             </TabsTrigger>
             <TabsTrigger value="case">Case</TabsTrigger>
-            <TabsTrigger value="menu">
-              <ShoppingCart className="mr-1 h-4 w-4" />
-              Order Clues
-            </TabsTrigger>
+            {!readOnly && (
+              <TabsTrigger value="menu">
+                <ShoppingCart className="mr-1 h-4 w-4" />
+                Order Clues
+              </TabsTrigger>
+            )}
             <TabsTrigger value="file">
               <FileText className="mr-1 h-4 w-4" />
               Case File ({data.purchases.length})
@@ -338,20 +415,24 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Shared notes for your team..."
                   rows={4}
-                  disabled={isEnded}
+                  disabled={isEnded || readOnly}
+                  readOnly={readOnly}
                 />
-                <Button
-                  size="sm"
-                  className="mt-2"
-                  onClick={handleSaveNotes}
-                  disabled={loading === "notes" || isEnded}
-                >
-                  {notesSaved ? "Saved!" : "Save Notes"}
-                </Button>
+                {!readOnly && (
+                  <Button
+                    size="sm"
+                    className="mt-2"
+                    onClick={handleSaveNotes}
+                    disabled={loading === "notes" || isEnded}
+                  >
+                    {notesSaved ? "Saved!" : "Save Notes"}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {!readOnly && (
           <TabsContent value="menu" className="mt-4">
             {orderStatusMessage && (
               <div className="mb-4 rounded-lg border border-amber-200/80 bg-amber-50/80 p-3 text-sm text-amber-900">
@@ -450,6 +531,7 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
               </div>
             )}
           </TabsContent>
+          )}
 
           <TabsContent value="file" className="mt-4 space-y-4">
             {data.purchases.length === 0 ? (
@@ -551,14 +633,22 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
                           : "Incorrect"}
                     </Badge>
                   )}
-                  <Button
-                    className="medical-btn-student mt-4 w-full"
-                    onClick={() => setActiveTab("prep")}
-                  >
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    Continue to Presentation Prep
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                  {!readOnly && (
+                    <Button
+                      className="medical-btn-student mt-4 w-full"
+                      onClick={() => setActiveTab("prep")}
+                    >
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      Continue to Presentation Prep
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : readOnly ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  Waiting for your captain to submit a diagnosis.
                 </CardContent>
               </Card>
             ) : (
@@ -653,6 +743,8 @@ export function TeamGameView({ teamId, initialData }: { teamId: string; initialD
               team={data.team}
               sessionEnded={isEnded}
               isActive={activeTab === "prep"}
+              readOnly={readOnly}
+              captainToken={readOnly ? null : getCaptainToken(teamId)}
             />
           </TabsContent>
         </Tabs>

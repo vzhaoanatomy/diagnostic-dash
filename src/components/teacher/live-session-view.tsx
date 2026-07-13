@@ -10,6 +10,7 @@ import { computeFinalBudget, speedBonusLabel } from "@/lib/scoring";
 import { SessionRoundTimer } from "@/components/teacher/session-round-timer";
 import { SessionJoinPanel } from "@/components/teacher/session-join-panel";
 import { TeamFinalBudgetEditor } from "@/components/teacher/team-final-budget-editor";
+import { TeamCaptainResetButton } from "@/components/teacher/team-captain-reset-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,9 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
 
     const { data: teams } = await supabase
       .from("teams")
-      .select("*, purchases:team_purchases(*, menu_item:case_menu_items(*))")
+      .select(
+        "id, session_id, team_name, budget_remaining, shared_notes, diagnosis, evidence, alternate_diagnosis, diagnosis_status, submission_count, first_diagnosis, first_submitted_at, submitted_at, pathophys_explanation, treatment_plan, key_orders_reflection, purchase_journey, presentation_notes, speed_bonus, speed_rank, teacher_budget_adjustment, captain_pin, created_at, purchases:team_purchases(*, menu_item:case_menu_items(*))"
+      )
       .eq("session_id", data.session.id)
       .order("created_at");
 
@@ -349,6 +352,12 @@ export function LiveSessionView({ initialData }: { initialData: SessionData }) {
                         </div>
                       </div>
                     )}
+                    <TeamCaptainResetButton
+                      teamId={team.id}
+                      sessionId={data.session.id}
+                      teamName={team.team_name}
+                      captainPin={team.captain_pin}
+                    />
                   </CardContent>
                 </Card>
               ))}

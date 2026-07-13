@@ -11,6 +11,11 @@ import {
   validateEvidence,
 } from "@/lib/game-rules";
 import { applySpeedBonusIfEligible } from "@/lib/speed-bonus";
+import { assertCaptainToken } from "@/lib/captain-server";
+import {
+  generateCaptainPin,
+  generateCaptainToken,
+} from "@/lib/captain-credentials";
 import { isInterviewType, type MenuItemType } from "@/lib/menu-item-types";
 import { generateJoinCode, checkDiagnosis } from "@/lib/utils";
 import { isMissingColumnError, SCHEMA_MIGRATION_HINT } from "@/lib/supabase/schema-fallback";
@@ -331,26 +336,58 @@ export async function joinGame(joinCode: string, teamName: string) {
 
   const caseData = session.case as { starting_budget: number };
 
+  const captainPin = generateCaptainPin();
+  const captainToken = generateCaptainToken();
+
   const { data: team, error } = await supabase
     .from("teams")
     .insert({
       session_id: session.id,
       team_name: teamName.trim(),
       budget_remaining: caseData.starting_budget,
+      captain_pin: captainPin,
+      captain_token: captainToken,
     })
     .select()
     .single();
 
   if (error) {
     if (error.code === "23505") throw new Error("Team name already taken in this session");
+    if (isMissingColumnError(error.message, "captain_token")) {
+      const { data: legacyTeam, error: legacyError } = await supabase
+        .from("teams")
+        .insert({
+          session_id: session.id,
+          team_name: teamName.trim(),
+          budget_remaining: caseData.starting_budget,
+        })
+        .select()
+        .single();
+      if (legacyError) {
+        if (legacyError.code === "23505") throw new Error("Team name already taken in this session");
+        throw new Error(legacyError.message);
+      }
+      return { teamId: legacyTeam.id, sessionId: session.id };
+    }
     throw new Error(error.message);
   }
 
-  return { teamId: team.id, sessionId: session.id };
+  return {
+    teamId: team.id,
+    sessionId: session.id,
+    captainPin,
+    captainToken,
+  };
 }
 
-export async function purchaseItem(teamId: string, menuItemId: string) {
+export async function purchaseItem(
+  teamId: string,
+  menuItemId: string,
+  captainToken?: string | null
+) {
   const supabase = await createClient();
+
+  await assertCaptainToken(supabase, teamId, captainToken);
 
   const { data: team } = await supabase
     .from("teams")
@@ -414,8 +451,14 @@ export async function purchaseItem(teamId: string, menuItemId: string) {
   return data;
 }
 
-export async function updateTeamNotes(teamId: string, notes: string) {
+export async function updateTeamNotes(
+  teamId: string,
+  notes: string,
+  captainToken?: string | null
+) {
   const supabase = await createClient();
+
+  await assertCaptainToken(supabase, teamId, captainToken);
 
   const { error } = await supabase
     .from("teams")
@@ -429,13 +472,16 @@ export async function submitDiagnosis(
   teamId: string,
   diagnosis: string,
   evidence: string[],
-  alternateDiagnosis: string
+  alternateDiagnosis: string,
+  captainToken?: string | null
 ): Promise<{
   submissionCount: number;
   diagnosisStatus: "correct" | "incorrect";
   canResubmit: boolean;
 }> {
   const supabase = await createClient();
+
+  await assertCaptainToken(supabase, teamId, captainToken);
 
   const { data: team } = await supabase
     .from("teams")

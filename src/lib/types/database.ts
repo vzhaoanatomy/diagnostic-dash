@@ -84,6 +84,7 @@ export interface Team {
   speed_bonus: number;
   speed_rank: number | null;
   teacher_budget_adjustment: number;
+  captain_pin: string | null;
   created_at: string;
 }
 
@@ -213,6 +214,8 @@ export interface Database {
           first_diagnosis?: string | null;
           first_submitted_at?: string | null;
           submitted_at?: string | null;
+          captain_pin?: string;
+          captain_token?: string;
           pathophys_explanation?: string;
           treatment_plan?: string[];
           key_orders_reflection?: string;
