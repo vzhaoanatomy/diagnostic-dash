@@ -344,12 +344,10 @@ export function TeamGameView({
               How to Play
             </TabsTrigger>
             <TabsTrigger value="case">Case</TabsTrigger>
-            {!readOnly && (
-              <TabsTrigger value="menu">
-                <ShoppingCart className="mr-1 h-4 w-4" />
-                Order Clues
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="menu">
+              <ShoppingCart className="mr-1 h-4 w-4" />
+              Order Clues
+            </TabsTrigger>
             <TabsTrigger value="file">
               <FileText className="mr-1 h-4 w-4" />
               Case File ({data.purchases.length})
@@ -432,9 +430,13 @@ export function TeamGameView({
             </Card>
           </TabsContent>
 
-          {!readOnly && (
           <TabsContent value="menu" className="mt-4">
-            {orderStatusMessage && (
+            {readOnly && (
+              <div className="mb-4 rounded-lg border border-blue-200/80 bg-blue-50/80 p-3 text-sm text-blue-900">
+                Browse what your team can order — your captain places orders on the main iPad.
+              </div>
+            )}
+            {!readOnly && orderStatusMessage && (
               <div className="mb-4 rounded-lg border border-amber-200/80 bg-amber-50/80 p-3 text-sm text-amber-900">
                 {orderStatusMessage}
               </div>
@@ -503,6 +505,10 @@ export function TeamGameView({
                                 <Badge className="bg-medical-mint/30 text-medical-teal">
                                   <CheckCircle className="mr-1 h-3 w-3" /> Purchased
                                 </Badge>
+                              ) : readOnly ? (
+                                <Badge variant="outline" className="text-muted-foreground">
+                                  Not ordered yet
+                                </Badge>
                               ) : (
                                 <Button
                                   size="sm"
@@ -531,13 +537,15 @@ export function TeamGameView({
               </div>
             )}
           </TabsContent>
-          )}
 
           <TabsContent value="file" className="mt-4 space-y-4">
             {data.purchases.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  No clues yet. Order patient history or tests from Order Clues to build your case file.
+                  No clues yet.{" "}
+                  {readOnly
+                    ? "Ask your captain to order patient history or tests from Order Clues."
+                    : "Order patient history or tests from Order Clues to build your case file."}
                 </CardContent>
               </Card>
             ) : (
